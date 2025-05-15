@@ -37,7 +37,9 @@
     "lint": "eslint . --ext .ts,.js,.mjs,.cjs --fix",
     "lint:check": "eslint . --ext .ts,.js,.mjs,.cjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint:check && npm run typecheck"
+    "check": "npm run lint:check && npm run typecheck",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
