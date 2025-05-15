@@ -11,7 +11,7 @@ export class SearchMuseumObjectsTool {
   public readonly description: string = 'Search for objects in the Metropolitan Museum of Art (Met Museum). Will return Total objects found, '
     + 'followed by a list of Object Ids.'
     + 'The parameter title should be set to true if you want to search for objects by title.'
-    + 'The parameter hasImages is false by default, but can be set to true to return objects without images.'
+    + 'The parameter hasImages is false by default, but can be set to true to return objects with images.'
     + 'If the parameter hasImages is true, the parameter title should be false.';
 
   // Define the input schema
