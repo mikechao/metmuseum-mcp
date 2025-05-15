@@ -44,7 +44,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
     "agents": "^0.0.88",
-    "image-to-base64": "^2.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

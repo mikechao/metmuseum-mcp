@@ -1,5 +1,4 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import imageToBase64 from 'image-to-base64';
 import z from 'zod';
 import { ObjectResponseSchema } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
@@ -51,7 +50,7 @@ export class GetObjectTool {
         text,
       });
       if (returnImage && data.primaryImageSmall) {
-        const imageBase64 = await imageToBase64(data.primaryImageSmall);
+        const imageBase64 = await this.fetchImageAsBase64(data.primaryImageSmall);
         content.push({
           type: 'image' as const,
           data: imageBase64,
@@ -72,5 +71,17 @@ export class GetObjectTool {
         isError: true,
       };
     }
+  }
+
+  private async fetchImageAsBase64(url: string): Promise<string> {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    // Convert ArrayBuffer to base64
+    let binary = '';
+    const bytes = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 }
