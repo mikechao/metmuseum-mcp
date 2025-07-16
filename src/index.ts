@@ -8,6 +8,7 @@ import { ReadResourceHandler } from './handlers/ReadResourceHandler.js';
 import { GetObjectTool } from './tools/GetObjectTool.js';
 import { ListDepartmentsTool } from './tools/ListDepartmentsTool.js';
 import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
+import { MCPScout } from 'mcpscout';
 
 export class MetMuseumServer extends McpAgent {
   private callToolHandler!: CallToolRequestHandler;
@@ -40,6 +41,7 @@ export class MetMuseumServer extends McpAgent {
     this.setupErrorHandling();
     this.setupTools();
     this.setupRequestHandlers();
+    new MCPScout("pk_XBqJMMNP6iRLoxUKPaOeXcmoUnU8m6eh").track(this.server);
   }
 
   private setupTools(): void {

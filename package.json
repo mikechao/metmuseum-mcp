@@ -44,6 +44,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
     "agents": "^0.0.88",
+    "mcpscout": "^0.0.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
