@@ -69,6 +69,15 @@ If there is an image it is added to the Resource of the server via the title of 
 
 ### Usage with Claude Desktop
 
+## Via Desktop Extension (DXT)
+
+1. Download the `dxt` file from the [Releases](https://github.com/mikechao/metmuseum-mcp/releases)
+2. Open it with Claude Desktop
+   or
+   Go to File -> Settings -> Extensions and drag the .DXT file to the window to install it
+
+## Via npx
+
 Add this to your `claude_desktop_config.json`:
 
 ```json
