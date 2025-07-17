@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mikechao-metmuseum-mcp-badge.png)](https://mseep.ai/app/mikechao-metmuseum-mcp)
+
 [![themet logo](https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/The_Metropolitan_Museum_of_Art_Logo.svg/250px-The_Metropolitan_Museum_of_Art_Logo.svg.png)](https://www.metmuseum.org/)
 
 # Met Museum MCP Server
