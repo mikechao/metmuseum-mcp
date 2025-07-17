@@ -1,5 +1,3 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mikechao-metmuseum-mcp-badge.png)](https://mseep.ai/app/mikechao-metmuseum-mcp)
-
 [![themet logo](https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/The_Metropolitan_Museum_of_Art_Logo.svg/250px-The_Metropolitan_Museum_of_Art_Logo.svg.png)](https://www.metmuseum.org/)
 
 # Met Museum MCP Server
@@ -9,6 +7,8 @@ A Model Context Protocol (MCP) server that provides access to the Metropolitan M
 <a href="https://glama.ai/mcp/servers/@mikechao/metmuseum-mcp"><img width="380" height="200" src="https://glama.ai/mcp/servers/@mikechao/metmuseum-mcp/badge" alt="Met Museum MCP Server" /></a>
 
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mikechao-metmuseum-mcp-badge.png)](https://mseep.ai/app/mikechao-metmuseum-mcp)
+
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/ccc75a48-9b33-4a9a-8ef7-8dc3848db263)
 
 ## Features
 
