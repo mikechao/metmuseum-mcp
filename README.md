@@ -123,6 +123,19 @@ Can you find any art that has "cat" in the title or features "cats"?
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+### Development
+
+This project uses `pnpm` for local development and CI.
+
+```bash
+corepack enable
+pnpm install
+pnpm run build
+pnpm run check
+```
+
+For non-interactive shells/CI runners, use `CI=true pnpm install --frozen-lockfile`.
+
 ## License
 
 This MCP server is licensed under the MIT License. This means you are free to use, modify, and distribute the software, subject to the terms and conditions of the MIT License. For more details, please see the LICENSE file in the project repository.

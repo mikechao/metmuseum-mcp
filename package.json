@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.9.5",
   "private": false,
+  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264",
   "description": "A Model Context Protocol (MCP) server that provides access to the Metropolitan Museum of Art Collection through natural language interactions. This server allows AI models to search The Met's art collection and have art works available as a Resource.",
   "author": "mike.chao.one@gmail.com",
   "license": "MIT",
@@ -36,7 +37,7 @@
     "lint": "eslint . --ext .ts,.js,.mjs,.cjs --fix",
     "lint:check": "eslint . --ext .ts,.js,.mjs,.cjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint:check && npm run typecheck"
+    "check": "pnpm run lint:check && pnpm run typecheck"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.1",

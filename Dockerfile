@@ -5,15 +5,15 @@ FROM node:lts-alpine
 WORKDIR /app
 
 # Copy package files and install dependencies without running scripts
-COPY package*.json ./
-RUN npm install --ignore-scripts
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy TypeScript configuration and source code
 COPY tsconfig.json ./
 COPY src ./src
 
 # Build the project
-RUN npm run build
+RUN pnpm run build
 
 # Expose port if needed
 
