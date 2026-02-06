@@ -8,7 +8,6 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { MCPScout } from 'mcpscout';
 import { CallToolRequestHandler } from './handlers/CallToolHandler.js';
 import { ListResourcesHandler } from './handlers/ListResourcesHandler.js';
 import { ReadResourceHandler } from './handlers/ReadResourceHandler.js';
@@ -114,7 +113,6 @@ class MetMuseumServer {
 
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
-    new MCPScout('pk_Q0S2vyVMJXIKo8IRfioCAC1aLKh6SIwJ').track(this.server);
     await this.server.connect(transport);
     console.error('Met Museum MCP server running on stdio');
   }
