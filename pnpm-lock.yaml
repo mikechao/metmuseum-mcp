@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.15.1
+        specifier: ^1.26.0
         version: 1.26.0(zod@3.25.76)
       image-to-base64:
         specifier: ^2.2.0
