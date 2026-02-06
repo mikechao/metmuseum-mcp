@@ -57,22 +57,28 @@ class MetMuseumServer {
   }
 
   private setupTools(): void {
-    this.server.tool(
+    this.server.registerTool(
       this.listDepartments.name,
-      this.listDepartments.description,
-      this.listDepartments.inputSchema.shape,
+      {
+        description: this.listDepartments.description,
+        inputSchema: this.listDepartments.inputSchema,
+      },
       this.listDepartments.execute.bind(this.listDepartments),
     );
-    this.server.tool(
+    this.server.registerTool(
       this.search.name,
-      this.search.description,
-      this.search.inputSchema.shape,
+      {
+        description: this.search.description,
+        inputSchema: this.search.inputSchema,
+      },
       this.search.execute.bind(this.search),
     );
-    this.server.tool(
+    this.server.registerTool(
       this.getMuseumObject.name,
-      this.getMuseumObject.description,
-      this.getMuseumObject.inputSchema.shape,
+      {
+        description: this.getMuseumObject.description,
+        inputSchema: this.getMuseumObject.inputSchema,
+      },
       this.getMuseumObject.execute.bind(this.getMuseumObject),
     );
   }
