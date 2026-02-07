@@ -30,6 +30,7 @@ interface AppState {
   pageSize: number;
   isBusy: boolean;
   isResultsLoading: boolean;
+  isDetailsLoading: boolean;
 }
 
 interface SearchRequest {
@@ -147,6 +148,7 @@ const state: AppState = {
   pageSize: DEFAULT_PAGE_SIZE,
   isBusy: false,
   isResultsLoading: false,
+  isDetailsLoading: false,
 };
 
 // ============================================================================
@@ -554,6 +556,7 @@ async function runWithConcurrency<T>(
 
 function renderResults(): void {
   resultsEl.innerHTML = '';
+  resultsEl.setAttribute('aria-busy', state.isResultsLoading || state.isDetailsLoading ? 'true' : 'false');
 
   if (state.isResultsLoading) {
     const loading = document.createElement('div');
@@ -587,7 +590,11 @@ function renderResults(): void {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = `result-card${state.selectedObject?.objectID === result.objectID ? ' active' : ''}`;
+    card.disabled = state.isDetailsLoading;
     card.addEventListener('click', () => {
+      if (state.isDetailsLoading) {
+        return;
+      }
       loadObjectDetails(result.objectID).catch((error: unknown) => {
         setStatus(errorToMessage(error), true);
       });
@@ -625,24 +632,52 @@ function renderResults(): void {
     card.append(meta);
     resultsEl.append(card);
   }
+
+  if (state.isDetailsLoading) {
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'results-details-loading';
+    loadingOverlay.setAttribute('role', 'status');
+    loadingOverlay.setAttribute('aria-live', 'polite');
+
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.textContent = 'Loading details...';
+
+    loadingOverlay.append(spinner, text);
+    resultsEl.append(loadingOverlay);
+  }
 }
 
 async function loadObjectDetails(objectId: number): Promise<void> {
+  if (state.isDetailsLoading) {
+    return;
+  }
+
+  state.isDetailsLoading = true;
+  renderResults();
   detailsEl.innerHTML = '<div class="skeleton" style="height: 260px; border-radius: 8px;"></div>';
   setStatus(`Loading object ${objectId}...`, false);
 
-  const result = await callTool('get-museum-object', {
-    objectId,
-    returnImage: true,
-  });
+  try {
+    const result = await callTool('get-museum-object', {
+      objectId,
+      returnImage: true,
+    });
 
-  const objectData = parseObjectResult(result);
-  state.selectedObject = objectData;
-  state.selectedImageData = getImageData(result);
+    const objectData = parseObjectResult(result);
+    state.selectedObject = objectData;
+    state.selectedImageData = getImageData(result);
 
-  renderResults();
-  renderDetails();
-  setStatus(`Loaded object ${objectId}.`, false);
+    renderDetails();
+    setStatus(`Loaded object ${objectId}.`, false);
+  }
+  finally {
+    state.isDetailsLoading = false;
+    renderResults();
+  }
 }
 
 function renderDetails(): void {
