@@ -1,23 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import imageToBase64 from 'image-to-base64';
 import z from 'zod';
-import { ObjectResponseSchema } from '../types/types.js';
-import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
-
-function normalizeNulls<T>(value: T): T {
-  if (value === null) {
-    return undefined as T;
-  }
-  if (Array.isArray(value)) {
-    return value.map(item => normalizeNulls(item)) as T;
-  }
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, val]) => [key, normalizeNulls(val)]),
-    ) as T;
-  }
-  return value;
-}
+import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 
 export class GetObjectTool {
   public readonly name: string = 'get-museum-object';
@@ -29,34 +14,17 @@ export class GetObjectTool {
 
   public readonly imageByTitle = new Map<string, string>();
 
-  private readonly baseURL: string = 'https://collectionapi.metmuseum.org/public/collection/v1/objects/';
-
   private readonly server: McpServer;
+  private readonly apiClient: MetMuseumApiClient;
 
-  constructor(server: McpServer) {
+  constructor(server: McpServer, apiClient: MetMuseumApiClient) {
     this.server = server;
+    this.apiClient = apiClient;
   }
 
   public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>) {
     try {
-      const url = `${this.baseURL}${objectId}`;
-      const response = await metMuseumRateLimiter.fetch(url.toString());
-      if (!response.ok) {
-        if (response.status === 404) {
-          return {
-            content: [{ type: 'text' as const, text: `Museum object id ${objectId} was not found.` }],
-            isError: true,
-          };
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const jsonData = await response.json();
-      const normalizedData = normalizeNulls(jsonData);
-      const parseResult = ObjectResponseSchema.safeParse(normalizedData);
-      if (!parseResult.success) {
-        throw new Error(`Invalid response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
-      }
-      const data = parseResult.data;
+      const data = await this.apiClient.getObject(objectId);
       const text = `Title: ${data.title}\n`
         + `${data.artistDisplayName ? `Artist: ${data.artistDisplayName}\n` : ''}`
         + `${data.artistDisplayBio ? `Artist Bio: ${data.artistDisplayBio}\n` : ''}`
@@ -93,6 +61,12 @@ export class GetObjectTool {
       };
     }
     catch (error) {
+      if (error instanceof MetMuseumApiError && error.status === 404) {
+        return {
+          content: [{ type: 'text' as const, text: `Museum object id ${objectId} was not found.` }],
+          isError: true,
+        };
+      }
       console.error('Error getting museum object:', error);
       return {
         content: [{ type: 'text' as const, text: `Error getting museum object id ${objectId}: ${error}` }],

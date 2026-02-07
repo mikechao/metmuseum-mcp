@@ -4,6 +4,7 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { MetMuseumApiClient } from './api/MetMuseumApiClient.js';
 import { ListResourcesHandler } from './handlers/ListResourcesHandler.js';
 import { ReadResourceHandler } from './handlers/ReadResourceHandler.js';
 import { GetObjectTool } from './tools/GetObjectTool.js';
@@ -16,6 +17,7 @@ export class MetMuseumServer {
   private server: McpServer;
   private listResourcesHandler: ListResourcesHandler;
   private readResourceHandler: ReadResourceHandler;
+  private metMuseumApiClient: MetMuseumApiClient;
   private listDepartments: ListDepartmentsTool;
   private search: SearchMuseumObjectsTool;
   private getMuseumObject: GetObjectTool;
@@ -35,9 +37,10 @@ export class MetMuseumServer {
         },
       },
     );
-    this.listDepartments = new ListDepartmentsTool();
-    this.search = new SearchMuseumObjectsTool();
-    this.getMuseumObject = new GetObjectTool(this.server);
+    this.metMuseumApiClient = new MetMuseumApiClient();
+    this.listDepartments = new ListDepartmentsTool(this.metMuseumApiClient);
+    this.search = new SearchMuseumObjectsTool(this.metMuseumApiClient);
+    this.getMuseumObject = new GetObjectTool(this.server, this.metMuseumApiClient);
     this.openMetExplorer = new OpenMetExplorerTool();
     this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
     this.listResourcesHandler = new ListResourcesHandler(
