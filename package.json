@@ -40,6 +40,7 @@
     "check": "pnpm run lint:check && pnpm run typecheck"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "image-to-base64": "^2.2.0",
     "zod": "^3.24.2"

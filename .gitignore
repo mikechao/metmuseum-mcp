@@ -5,3 +5,4 @@ dist/
 .env
 notes.txt
 .vscode
+.pnpm-store/
