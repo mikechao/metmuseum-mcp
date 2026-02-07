@@ -19,6 +19,7 @@
       body {
         margin: 0;
         padding: 0;
+        width: 100%;
         background: var(--surface);
         color: var(--text);
         font-family: var(--font-sans, 'Avenir Next', 'Segoe UI', sans-serif);
@@ -33,6 +34,8 @@
         grid-template-rows: auto auto 1fr;
         gap: 12px;
         padding: 12px;
+        width: 100%;
+        min-width: 0;
       }
 
       .controls {
@@ -357,7 +360,9 @@
 
       const { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } = runtime;
 
-      const app = new App({ name: 'met-explorer-app', version: '0.1.0' }, {});
+      // Hosts handle width differently; sync height only to avoid narrow-width lock-in.
+      const app = new App({ name: 'met-explorer-app', version: '0.1.0' }, {}, { autoResize: false });
+      let stopHeightSync = null;
 
       app.onhostcontextchanged = (contextUpdate) => {
         applyContext(contextUpdate);
@@ -370,6 +375,14 @@
       app.ontoolresult = (params) => {
         const initialState = getStructuredValue(params)?.initialState;
         applyLaunchState(initialState);
+      };
+
+      app.onteardown = async () => {
+        if (stopHeightSync) {
+          stopHeightSync();
+          stopHeightSync = null;
+        }
+        return {};
       };
 
       searchForm.addEventListener('submit', async (event) => {
@@ -401,6 +414,7 @@
         try {
           await app.connect();
           applyContext(app.getHostContext());
+          stopHeightSync = startHeightSync();
 
           await loadDepartments();
           updatePagination();
@@ -1010,6 +1024,47 @@
           return value;
         }
         return fallback;
+      }
+
+      function startHeightSync() {
+        if (typeof ResizeObserver === 'undefined') {
+          return null;
+        }
+
+        let raf = 0;
+        let lastHeight = 0;
+
+        const reportHeight = () => {
+          raf = 0;
+          const nextHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
+          if (!nextHeight || nextHeight === lastHeight) {
+            return;
+          }
+          lastHeight = nextHeight;
+          app.sendSizeChanged({ height: nextHeight });
+        };
+
+        const scheduleReport = () => {
+          if (raf) {
+            return;
+          }
+          raf = requestAnimationFrame(reportHeight);
+        };
+
+        const observer = new ResizeObserver(scheduleReport);
+        observer.observe(document.documentElement);
+        observer.observe(document.body);
+        window.addEventListener('load', scheduleReport);
+        scheduleReport();
+
+        return () => {
+          observer.disconnect();
+          if (raf) {
+            cancelAnimationFrame(raf);
+            raf = 0;
+          }
+          window.removeEventListener('load', scheduleReport);
+        };
       }
 
       init();
