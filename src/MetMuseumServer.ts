@@ -1,6 +1,4 @@
-import process from 'node:process';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
@@ -108,16 +106,13 @@ export class MetMuseumServer {
     this.server.server.onerror = (error) => {
       console.error('[MCP Error]', error);
     };
-
-    process.on('SIGINT', async () => {
-      await this.server.close();
-      process.exit(0);
-    });
   }
 
-  async run(): Promise<void> {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('Met Museum MCP server running on stdio');
+  get serverInstance(): McpServer {
+    return this.server;
+  }
+
+  async close(): Promise<void> {
+    await this.server.close();
   }
 }
