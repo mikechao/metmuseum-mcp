@@ -1,351 +1,385 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Met Explorer</title>
-    <style>
-      :root {
-        --surface: var(--color-background-primary, #f8f6f3);
-        --panel: var(--color-background-secondary, #ffffff);
-        --text: var(--color-text-primary, #1f1a17);
-        --muted: var(--color-text-secondary, #6c625c);
-        --line: var(--color-border-primary, #dfd5cd);
-        --accent: #9d1b2f;
-        --accent-soft: #f8e8ea;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Met Explorer</title>
+  <style>
+    :root {
+      --surface: var(--color-background-primary, #f8f6f3);
+      --panel: var(--color-background-secondary, #ffffff);
+      --text: var(--color-text-primary, #1f1a17);
+      --muted: var(--color-text-secondary, #6c625c);
+      --line: var(--color-border-primary, #dfd5cd);
+      --accent: #9d1b2f;
+      --accent-soft: #f8e8ea;
+      --input-bg: #ffffff;
+      --card-bg: #ffffff;
+      --image-placeholder: #f1ece7;
+      --skeleton-from: #eee7e1;
+      --skeleton-mid: #f8f2ed;
+      --error-color: #b6242f;
+    }
+
+    [data-theme='dark'] {
+      --surface: var(--color-background-primary, #1a1a1a);
+      --panel: var(--color-background-secondary, #252525);
+      --text: var(--color-text-primary, #e8e4e0);
+      --muted: var(--color-text-secondary, #a39991);
+      --line: var(--color-border-primary, #3d3935);
+      --accent: #d4424f;
+      --accent-soft: #3d2224;
+      --input-bg: #2a2a2a;
+      --card-bg: #2a2a2a;
+      --image-placeholder: #333330;
+      --skeleton-from: #333330;
+      --skeleton-mid: #3d3a35;
+      --error-color: #f06b6b;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-sans, 'Avenir Next', 'Segoe UI', sans-serif);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+      padding: 12px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr auto;
+      gap: 8px;
+    }
+
+    .flags {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input[type='text'],
+    select,
+    button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      min-height: 36px;
+      padding: 0 10px;
+      font: inherit;
+      color: inherit;
+      background: var(--input-bg);
+    }
+
+    select {
+      color: var(--text);
+    }
+
+    select option {
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 18px;
+      padding: 0 2px;
+    }
+
+    .status.error {
+      color: var(--error-color);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 12px;
+      min-height: 420px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .results-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 10px;
+      padding: 10px;
+      overflow: auto;
+      align-content: start;
+    }
+
+    .results-loading {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      padding: 20px 8px;
+      font-size: 13px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid var(--line);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .pagination button {
+      width: auto;
+      min-height: 32px;
+      padding: 0 12px;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .pagination button:hover:enabled {
+      border-color: var(--accent);
+    }
+
+    .page-info {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .result-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card-bg);
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .result-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+      background: var(--image-placeholder);
+    }
+
+    .result-card .meta {
+      padding: 8px;
+    }
+
+    .result-card .title {
+      font-size: 13px;
+      line-height: 1.3;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .result-card .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .result-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    .detail-body {
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .detail-image {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--image-placeholder);
+      border: 1px solid var(--line);
+    }
+
+    .detail-title {
+      margin: 10px 0 6px;
+      font-size: 18px;
+    }
+
+    .detail-table {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px 10px;
+      font-size: 13px;
+    }
+
+    .detail-key {
+      color: var(--muted);
+    }
+
+    .skeleton {
+      animation: pulse 1.3s infinite ease-in-out;
+      background: linear-gradient(90deg, var(--skeleton-from) 0%, var(--skeleton-mid) 50%, var(--skeleton-from) 100%);
+      background-size: 200% 100%;
+    }
+
+    @keyframes pulse {
+      0% {
+        background-position: 0% 0%;
       }
 
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        background: var(--surface);
-        color: var(--text);
-        font-family: var(--font-sans, 'Avenir Next', 'Segoe UI', sans-serif);
+      100% {
+        background-position: 200% 0%;
       }
+    }
 
-      * {
-        box-sizing: border-box;
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
+    }
 
-      .app {
-        display: grid;
-        grid-template-rows: auto auto 1fr;
-        gap: 12px;
-        padding: 12px;
-        width: 100%;
-        min-width: 0;
-      }
-
-      .controls {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 10px;
-      }
-
+    @media (max-width: 900px) {
       .controls-grid {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr auto;
-        gap: 8px;
-      }
-
-      .flags {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-        margin-top: 8px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      label {
-        display: block;
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 4px;
-      }
-
-      input[type='text'],
-      select,
-      button {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid var(--line);
-        min-height: 36px;
-        padding: 0 10px;
-        font: inherit;
-        color: inherit;
-        background: #fff;
-      }
-
-      button {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      .status {
-        font-size: 13px;
-        color: var(--muted);
-        min-height: 18px;
-        padding: 0 2px;
-      }
-
-      .status.error {
-        color: #b6242f;
+        grid-template-columns: 1fr;
       }
 
       .content {
-        display: grid;
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-        gap: 12px;
-        min-height: 420px;
+        grid-template-columns: 1fr;
       }
+    }
+  </style>
+</head>
 
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .panel-title {
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .results-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-        gap: 10px;
-        padding: 10px;
-        overflow: auto;
-        align-content: start;
-      }
-
-      .results-loading {
-        grid-column: 1 / -1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        color: var(--muted);
-        padding: 20px 8px;
-        font-size: 13px;
-      }
-
-      .spinner {
-        width: 18px;
-        height: 18px;
-        border-radius: 999px;
-        border: 2px solid var(--line);
-        border-top-color: var(--accent);
-        animation: spin 0.8s linear infinite;
-      }
-
-      .pagination {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 10px;
-        border-top: 1px solid var(--line);
-      }
-
-      .pagination button {
-        width: auto;
-        min-height: 32px;
-        padding: 0 12px;
-        background: #fff;
-        color: var(--text);
-        border: 1px solid var(--line);
-      }
-
-      .pagination button:hover:enabled {
-        border-color: var(--accent);
-      }
-
-      .page-info {
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .result-card {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-        cursor: pointer;
-        overflow: hidden;
-      }
-
-      .result-card img {
-        width: 100%;
-        height: 120px;
-        object-fit: cover;
-        display: block;
-        background: #f1ece7;
-      }
-
-      .result-card .meta {
-        padding: 8px;
-      }
-
-      .result-card .title {
-        font-size: 13px;
-        line-height: 1.3;
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-
-      .result-card .sub {
-        font-size: 12px;
-        color: var(--muted);
-        line-height: 1.3;
-      }
-
-      .result-card.active {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 2px var(--accent-soft);
-      }
-
-      .empty {
-        color: var(--muted);
-        padding: 16px;
-        font-size: 13px;
-      }
-
-      .detail-body {
-        padding: 10px;
-        overflow: auto;
-      }
-
-      .detail-image {
-        width: 100%;
-        max-height: 260px;
-        object-fit: contain;
-        border-radius: 8px;
-        background: #f1ece7;
-        border: 1px solid var(--line);
-      }
-
-      .detail-title {
-        margin: 10px 0 6px;
-        font-size: 18px;
-      }
-
-      .detail-table {
-        display: grid;
-        grid-template-columns: 110px 1fr;
-        gap: 8px 10px;
-        font-size: 13px;
-      }
-
-      .detail-key {
-        color: var(--muted);
-      }
-
-      .skeleton {
-        animation: pulse 1.3s infinite ease-in-out;
-        background: linear-gradient(90deg, #eee7e1 0%, #f8f2ed 50%, #eee7e1 100%);
-        background-size: 200% 100%;
-      }
-
-      @keyframes pulse {
-        0% {
-          background-position: 0% 0%;
-        }
-
-        100% {
-          background-position: 200% 0%;
-        }
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @media (max-width: 900px) {
-        .controls-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .content {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="app">
-      <section class="controls">
-        <form id="search-form">
-          <div class="controls-grid">
-            <div>
-              <label for="query">Search Query</label>
-              <input id="query" type="text" placeholder="sunflowers, dragons, armor..." />
-            </div>
-            <div>
-              <label for="department">Department</label>
-              <select id="department">
-                <option value="">All departments</option>
-              </select>
-            </div>
-            <div>
-              <label>&nbsp;</label>
-              <button id="search-btn" type="submit">Search</button>
-            </div>
+<body>
+  <main class="app">
+    <section class="controls">
+      <form id="search-form">
+        <div class="controls-grid">
+          <div>
+            <label for="query">Search Query</label>
+            <input id="query" type="text" placeholder="sunflowers, dragons, armor..." />
           </div>
-          <div class="flags">
-            <label><input id="has-images" type="checkbox" checked /> Has images</label>
-            <label><input id="title-only" type="checkbox" /> Title only</label>
+          <div>
+            <label for="department">Department</label>
+            <select id="department">
+              <option value="">All departments</option>
+            </select>
           </div>
-        </form>
-      </section>
-
-      <div id="status" class="status"></div>
-
-      <section class="content">
-        <article class="panel">
-          <div id="results-title" class="panel-title">Results</div>
-          <div id="results" class="results-list">
-            <div class="empty">Run a search to explore objects.</div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="search-btn" type="submit">Search</button>
           </div>
-          <div id="results-pagination" class="pagination">
-            <button id="prev-page" type="button">Previous</button>
-            <div id="page-info" class="page-info">Page 0 of 0</div>
-            <button id="next-page" type="button">Next</button>
-          </div>
-        </article>
+        </div>
+        <div class="flags">
+          <label><input id="has-images" type="checkbox" checked /> Has images</label>
+          <label><input id="title-only" type="checkbox" /> Title only</label>
+        </div>
+      </form>
+    </section>
 
-        <article class="panel">
-          <div class="panel-title">Object Details</div>
-          <div id="details" class="detail-body">
-            <div class="empty">Select an object to see details.</div>
-          </div>
-        </article>
-      </section>
-    </main>
+    <div id="status" class="status"></div>
 
-    <script>
-      __APP_WITH_DEPS_RUNTIME_CODE__;
-    </script>
-    <script src="mcp-app.js"></script>
-  </body>
+    <section class="content">
+      <article class="panel">
+        <div id="results-title" class="panel-title">Results</div>
+        <div id="results" class="results-list">
+          <div class="empty">Run a search to explore objects.</div>
+        </div>
+        <div id="results-pagination" class="pagination">
+          <button id="prev-page" type="button">Previous</button>
+          <div id="page-info" class="page-info">Page 0 of 0</div>
+          <button id="next-page" type="button">Next</button>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-title">Object Details</div>
+        <div id="details" class="detail-body">
+          <div class="empty">Select an object to see details.</div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    __APP_WITH_DEPS_RUNTIME_CODE__;
+  </script>
+  <script src="mcp-app.js"></script>
+</body>
+
 </html>
