@@ -1,11 +1,9 @@
 import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
-  CallToolRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { CallToolRequestHandler } from './handlers/CallToolHandler.js';
 import { ListResourcesHandler } from './handlers/ListResourcesHandler.js';
 import { ReadResourceHandler } from './handlers/ReadResourceHandler.js';
 import { GetObjectTool } from './tools/GetObjectTool.js';
@@ -16,7 +14,6 @@ import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
 export class MetMuseumServer {
   private server: McpServer;
-  private callToolHandler: CallToolRequestHandler;
   private listResourcesHandler: ListResourcesHandler;
   private readResourceHandler: ReadResourceHandler;
   private listDepartments: ListDepartmentsTool;
@@ -43,12 +40,6 @@ export class MetMuseumServer {
     this.getMuseumObject = new GetObjectTool(this.server);
     this.openMetExplorer = new OpenMetExplorerTool();
     this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
-    this.callToolHandler = new CallToolRequestHandler(
-      this.listDepartments,
-      this.search,
-      this.getMuseumObject,
-      this.openMetExplorer,
-    );
     this.listResourcesHandler = new ListResourcesHandler(
       this.getMuseumObject,
     );
@@ -103,12 +94,8 @@ export class MetMuseumServer {
   }
 
   private setupRequestHandlers(): void {
-    this.server.server.setRequestHandler(
-      CallToolRequestSchema,
-      async (request) => {
-        return await this.callToolHandler.handleCallTool(request);
-      },
-    );
+    // Note: Tool call handling is done automatically by registerTool() above.
+    // We only need custom handlers for resources.
     this.server.server.setRequestHandler(
       ListResourcesRequestSchema,
       async () => {
