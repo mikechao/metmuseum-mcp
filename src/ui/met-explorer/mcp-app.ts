@@ -293,8 +293,15 @@ function openModal(): void {
 }
 
 function closeModal(): void {
+  const hadSelection = state.selectedObject !== null;
   modalOverlay.classList.remove('open');
   document.body.style.overflow = '';
+
+  if (hadSelection) {
+    state.selectedObject = null;
+    state.selectedImageData = null;
+    renderResults();
+  }
 }
 
 // ============================================================================
