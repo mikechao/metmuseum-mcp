@@ -4,6 +4,21 @@ import z from 'zod';
 import { ObjectResponseSchema } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
 
+function normalizeNulls<T>(value: T): T {
+  if (value === null) {
+    return undefined as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeNulls(item)) as T;
+  }
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, val]) => [key, normalizeNulls(val)]),
+    ) as T;
+  }
+  return value;
+}
+
 export class GetObjectTool {
   public readonly name: string = 'get-museum-object';
   public readonly description: string = 'Get a museum object by its ID, from the Metropolitan Museum of Art Collection';
@@ -30,7 +45,8 @@ export class GetObjectTool {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const jsonData = await response.json();
-      const parseResult = ObjectResponseSchema.safeParse(jsonData);
+      const normalizedData = normalizeNulls(jsonData);
+      const parseResult = ObjectResponseSchema.safeParse(normalizedData);
       if (!parseResult.success) {
         throw new Error(`Invalid response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
       }
