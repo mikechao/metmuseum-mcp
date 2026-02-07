@@ -138,6 +138,26 @@
         align-content: start;
       }
 
+      .results-loading {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: var(--muted);
+        padding: 20px 8px;
+        font-size: 13px;
+      }
+
+      .spinner {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 2px solid var(--line);
+        border-top-color: var(--accent);
+        animation: spin 0.8s linear infinite;
+      }
+
       .pagination {
         display: flex;
         align-items: center;
@@ -255,6 +275,12 @@
         }
       }
 
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       @media (max-width: 900px) {
         .controls-grid {
           grid-template-columns: 1fr;
@@ -335,6 +361,7 @@
         totalPages: 0,
         pageSize: DEFAULT_PAGE_SIZE,
         isBusy: false,
+        isResultsLoading: false,
       };
 
       const queryInput = document.getElementById('query');
@@ -546,6 +573,7 @@
 
         const token = ++state.latestSearchToken;
         state.results = [];
+        state.isResultsLoading = true;
         renderResults();
         setStatus('Searching The Met collection (page ' + page + ')...', false);
         setBusy(true);
@@ -567,6 +595,7 @@
 
           if (!parsed.objectIDs.length) {
             state.results = [];
+            state.isResultsLoading = false;
             renderResults();
             setStatus('No objects found for this query.', false);
             return;
@@ -580,6 +609,7 @@
           }
 
           state.results = hydrated;
+          state.isResultsLoading = false;
           renderResults();
           setStatus(
             'Loaded ' + hydrated.length + ' previews (page ' + state.currentPage + ' of ' + state.totalPages + ').',
@@ -595,6 +625,8 @@
           if (token !== state.latestSearchToken) {
             return;
           }
+          state.isResultsLoading = false;
+          renderResults();
           setStatus(errorToMessage(error), true);
         } finally {
           if (token === state.latestSearchToken) {
@@ -659,10 +691,30 @@
       function renderResults() {
         resultsEl.innerHTML = '';
 
+        if (state.isResultsLoading) {
+          const loading = document.createElement('div');
+          loading.className = 'results-loading';
+          loading.setAttribute('role', 'status');
+          loading.setAttribute('aria-live', 'polite');
+
+          const spinner = document.createElement('div');
+          spinner.className = 'spinner';
+          spinner.setAttribute('aria-hidden', 'true');
+
+          const text = document.createElement('span');
+          text.textContent = 'Loading results...';
+
+          loading.append(spinner, text);
+          resultsEl.append(loading);
+          return;
+        }
+
         if (!state.results.length) {
           const empty = document.createElement('div');
           empty.className = 'empty';
-          empty.textContent = 'No results loaded.';
+          empty.textContent = state.searchRequest
+            ? 'No objects found for this search.'
+            : 'Run a search to explore objects.';
           resultsEl.append(empty);
           return;
         }
