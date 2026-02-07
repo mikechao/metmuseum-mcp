@@ -5,7 +5,15 @@ export const SearchInputSchema = z.object({
   q: z.string().describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
   hasImages: z.boolean().optional().default(false).describe(`Only returns objects that have images`),
   title: z.boolean().optional().default(false).describe(`This should be set to true if you want to search for objects by title`),
+  isHighlight: z.boolean().optional().default(false).describe(`Only returns objects designated as highlights`),
+  tags: z.boolean().optional().default(false).describe(`Only returns objects that have subject keyword tags`),
+  isOnView: z.boolean().optional().default(false).describe(`Only returns objects currently on view`),
+  artistOrCulture: z.boolean().optional().default(false).describe(`When true, q is matched against artist or culture`),
   departmentId: z.number().optional().describe(`Returns objects that are in the specified department. The departmentId should come from the 'list-departments' tool.`),
+  medium: z.string().optional().describe(`Restricts search to objects with the specified medium`),
+  geoLocation: z.string().optional().describe(`Restricts search to objects with the specified geographic location`),
+  dateBegin: z.number().int().optional().describe(`Restricts search to objects with an object date on or after this year`),
+  dateEnd: z.number().int().optional().describe(`Restricts search to objects with an object date on or before this year`),
   page: z.number().int().positive().optional().default(1).describe(`1-based page number for paginated object IDs`),
   pageSize: z.number().int().positive().max(100).optional().default(24).describe(`Number of object IDs to return per page (max 100)`),
 });
@@ -20,7 +28,8 @@ export class SearchMuseumObjectsTool {
     + 'followed by a paginated list of Object Ids.'
     + 'The parameter title should be set to true if you want to search for objects by title.'
     + 'The parameter hasImages is false by default, but can be set to true to return only objects with images.'
-    + 'If the parameter hasImages is true, the parameter title should be false.'
+    + 'Additional optional filters are available for highlights, tags, on-view status, artist/culture match, medium, '
+    + 'geographic location, and date range.'
     + 'Use page and pageSize to paginate results.';
 
   // Define the input schema
@@ -35,13 +44,36 @@ export class SearchMuseumObjectsTool {
   /**
    * Execute the search operation
    */
-  public async execute({ q, hasImages, title, departmentId, page, pageSize }: z.infer<typeof this.inputSchema>) {
+  public async execute({
+    q,
+    hasImages,
+    title,
+    isHighlight,
+    tags,
+    isOnView,
+    artistOrCulture,
+    departmentId,
+    medium,
+    geoLocation,
+    dateBegin,
+    dateEnd,
+    page,
+    pageSize,
+  }: z.infer<typeof this.inputSchema>) {
     try {
       const searchResult = await this.apiClient.searchObjects({
         q,
         hasImages,
         title,
+        isHighlight,
+        tags,
+        isOnView,
+        artistOrCulture,
         departmentId,
+        medium,
+        geoLocation,
+        dateBegin,
+        dateEnd,
       });
 
       if (searchResult.total === 0 || !searchResult.objectIDs) {

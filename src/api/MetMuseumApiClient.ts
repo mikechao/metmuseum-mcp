@@ -46,22 +46,62 @@ export class MetMuseumApiClient {
     hasImages,
     title,
     departmentId,
+    isHighlight,
+    tags,
+    isOnView,
+    artistOrCulture,
+    medium,
+    geoLocation,
+    dateBegin,
+    dateEnd,
   }: {
     q: string;
-    hasImages: boolean;
-    title: boolean;
+    hasImages?: boolean;
+    title?: boolean;
     departmentId?: number;
+    isHighlight?: boolean;
+    tags?: boolean;
+    isOnView?: boolean;
+    artistOrCulture?: boolean;
+    medium?: string;
+    geoLocation?: string;
+    dateBegin?: number;
+    dateEnd?: number;
   }): Promise<z.infer<typeof SearchResponseSchema>> {
     const url = new URL(this.searchUrl);
     url.searchParams.set('q', q);
     if (hasImages) {
       url.searchParams.set('hasImages', 'true');
     }
-    if (title && !hasImages) {
+    if (title) {
       url.searchParams.set('title', 'true');
     }
-    if (departmentId) {
+    if (typeof departmentId === 'number') {
       url.searchParams.set('departmentId', departmentId.toString());
+    }
+    if (isHighlight) {
+      url.searchParams.set('isHighlight', 'true');
+    }
+    if (tags) {
+      url.searchParams.set('tags', 'true');
+    }
+    if (isOnView) {
+      url.searchParams.set('isOnView', 'true');
+    }
+    if (artistOrCulture) {
+      url.searchParams.set('artistOrCulture', 'true');
+    }
+    if (medium) {
+      url.searchParams.set('medium', medium);
+    }
+    if (geoLocation) {
+      url.searchParams.set('geoLocation', geoLocation);
+    }
+    if (typeof dateBegin === 'number') {
+      url.searchParams.set('dateBegin', dateBegin.toString());
+    }
+    if (typeof dateEnd === 'number') {
+      url.searchParams.set('dateEnd', dateEnd.toString());
     }
     return await this.fetchAndParse(url.toString(), SearchResponseSchema, 'search');
   }
