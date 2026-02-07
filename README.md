@@ -36,10 +36,13 @@ Search for various objects in The Met based on the inputs.
   - `hasImages` (boolean, optional, default: false): Only search for objects with images
   - `title` (boolean, optional, default: false): Returns objects that match the query, specifically searching against the title field for objects.
   - `departmentId` (number, optional): Returns objects that are a part of a specific department.
+  - `page` (number, optional, default: 1): 1-based page number for results.
+  - `pageSize` (number, optional, default: 24): Number of Object IDs per page (max 100).
 - Outputs:
 
   ```
   Total objects found: 54
+  Page: 1/3
   Object IDs: 436532, 789578, 436840, 438722,...
   ```
 

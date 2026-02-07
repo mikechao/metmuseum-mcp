@@ -135,6 +135,33 @@
         align-content: start;
       }
 
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .pagination button {
+        width: auto;
+        min-height: 32px;
+        padding: 0 12px;
+        background: #fff;
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      .pagination button:hover:enabled {
+        border-color: var(--accent);
+      }
+
+      .page-info {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
       .result-card {
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -271,6 +298,11 @@
           <div id="results" class="results-list">
             <div class="empty">Run a search to explore objects.</div>
           </div>
+          <div id="results-pagination" class="pagination">
+            <button id="prev-page" type="button">Previous</button>
+            <div id="page-info" class="page-info">Page 0 of 0</div>
+            <button id="next-page" type="button">Next</button>
+          </div>
         </article>
 
         <article class="panel">
@@ -286,12 +318,20 @@
       __APP_WITH_DEPS_RUNTIME_CODE__;
     </script>
     <script type="module">
+      const DEFAULT_PAGE_SIZE = 24;
+
       const state = {
         launch: {},
         results: [],
         selectedObject: null,
         selectedImageData: null,
         latestSearchToken: 0,
+        searchRequest: null,
+        currentPage: 1,
+        totalResults: 0,
+        totalPages: 0,
+        pageSize: DEFAULT_PAGE_SIZE,
+        isBusy: false,
       };
 
       const queryInput = document.getElementById('query');
@@ -303,6 +343,10 @@
       const statusEl = document.getElementById('status');
       const resultsTitleEl = document.getElementById('results-title');
       const resultsEl = document.getElementById('results');
+      const resultsPaginationEl = document.getElementById('results-pagination');
+      const prevPageButton = document.getElementById('prev-page');
+      const nextPageButton = document.getElementById('next-page');
+      const pageInfoEl = document.getElementById('page-info');
       const detailsEl = document.getElementById('details');
 
       const runtime = globalThis.__MCP_APPS_RUNTIME__;
@@ -333,6 +377,14 @@
         await runSearch();
       });
 
+      prevPageButton.addEventListener('click', () => {
+        void goToPage(state.currentPage - 1);
+      });
+
+      nextPageButton.addEventListener('click', () => {
+        void goToPage(state.currentPage + 1);
+      });
+
       hasImagesInput.addEventListener('change', () => {
         if (hasImagesInput.checked && titleOnlyInput.checked) {
           titleOnlyInput.checked = false;
@@ -351,6 +403,7 @@
           applyContext(app.getHostContext());
 
           await loadDepartments();
+          updatePagination();
 
           if (state.launch.q) {
             queryInput.value = state.launch.q;
@@ -448,18 +501,55 @@
           args.departmentId = Number(departmentRaw);
         }
 
+        state.searchRequest = args;
+        state.pageSize = DEFAULT_PAGE_SIZE;
+        state.currentPage = 1;
+        state.totalResults = 0;
+        state.totalPages = 0;
+        state.selectedObject = null;
+        state.selectedImageData = null;
+        updateResultsTitle();
+        renderDetails();
+        updatePagination();
+
+        await loadSearchPage(1);
+      }
+
+      async function goToPage(page) {
+        if (!state.searchRequest) {
+          return;
+        }
+        if (page < 1 || (state.totalPages > 0 && page > state.totalPages)) {
+          return;
+        }
+        await loadSearchPage(page);
+      }
+
+      async function loadSearchPage(page) {
+        if (!state.searchRequest) {
+          return;
+        }
+
         const token = ++state.latestSearchToken;
         state.results = [];
         renderResults();
-        setStatus('Searching The Met collection...', false);
+        setStatus('Searching The Met collection (page ' + page + ')...', false);
         setBusy(true);
 
         try {
-          const searchResult = await callTool('search-museum-objects', args);
-          const parsed = parseSearchResult(searchResult);
+          const searchResult = await callTool('search-museum-objects', {
+            ...state.searchRequest,
+            page,
+            pageSize: state.pageSize,
+          });
+          const parsed = parseSearchResult(searchResult, page, state.pageSize);
 
-          resultsTitleEl.textContent =
-            parsed.total > 0 ? 'Results (' + parsed.total + ' total, showing first 24)' : 'Results';
+          state.totalResults = parsed.total;
+          state.currentPage = parsed.page;
+          state.pageSize = parsed.pageSize;
+          state.totalPages = parsed.totalPages;
+          updateResultsTitle();
+          updatePagination();
 
           if (!parsed.objectIDs.length) {
             state.results = [];
@@ -468,9 +558,8 @@
             return;
           }
 
-          const idsToLoad = parsed.objectIDs.slice(0, 24);
-          setStatus('Loading object previews...', false);
-          const hydrated = await hydrateObjects(idsToLoad, token);
+          setStatus('Loading object previews for page ' + state.currentPage + '...', false);
+          const hydrated = await hydrateObjects(parsed.objectIDs, token);
 
           if (token !== state.latestSearchToken) {
             return;
@@ -478,7 +567,10 @@
 
           state.results = hydrated;
           renderResults();
-          setStatus('Loaded ' + hydrated.length + ' object previews.', false);
+          setStatus(
+            'Loaded ' + hydrated.length + ' previews (page ' + state.currentPage + ' of ' + state.totalPages + ').',
+            false,
+          );
 
           if (state.launch.objectId) {
             const target = state.launch.objectId;
@@ -718,21 +810,47 @@
           .filter(Boolean);
       }
 
-      function parseSearchResult(result) {
+      function parseSearchResult(result, requestedPage, requestedPageSize) {
         const structured = getStructuredValue(result);
         if (structured && typeof structured.total === 'number' && Array.isArray(structured.objectIDs)) {
+          const total = structured.total;
+          const pageSize =
+            typeof structured.pageSize === 'number' && structured.pageSize > 0
+              ? structured.pageSize
+              : requestedPageSize;
+          const page =
+            typeof structured.page === 'number' && structured.page > 0
+              ? structured.page
+              : requestedPage;
+          const totalPages =
+            typeof structured.totalPages === 'number' && structured.totalPages >= 0
+              ? structured.totalPages
+              : (total > 0 ? Math.ceil(total / pageSize) : 0);
+          const hasServerPagination =
+            typeof structured.page === 'number'
+            && typeof structured.pageSize === 'number'
+            && typeof structured.totalPages === 'number';
+          const start = (page - 1) * pageSize;
+          const objectIDs = hasServerPagination
+            ? structured.objectIDs
+            : structured.objectIDs.slice(start, start + pageSize);
+
           return {
-            total: structured.total,
-            objectIDs: structured.objectIDs,
+            total,
+            page,
+            pageSize,
+            totalPages,
+            objectIDs,
           };
         }
 
         const text = extractText(result);
         if (text.includes('No objects found')) {
-          return { total: 0, objectIDs: [] };
+          return { total: 0, page: 1, pageSize: requestedPageSize, totalPages: 0, objectIDs: [] };
         }
 
         const totalMatch = text.match(/Total objects found:\s*(\d+)/);
+        const pageMatch = text.match(/Page:\s*(\d+)\s*\/\s*(\d+)/);
         const idsMatch = text.match(/Object IDs:\s*([\d,\s]+)/);
         const ids = idsMatch
           ? idsMatch[1]
@@ -742,10 +860,20 @@
               .map((id) => Number(id))
               .filter((id) => Number.isFinite(id))
           : [];
+        const total = totalMatch ? Number(totalMatch[1]) : ids.length;
+        const page = pageMatch ? Number(pageMatch[1]) : requestedPage;
+        const totalPages = pageMatch
+          ? Number(pageMatch[2])
+          : (total > 0 ? Math.ceil(total / requestedPageSize) : 0);
+        const start = (page - 1) * requestedPageSize;
+        const objectIDs = pageMatch ? ids : ids.slice(start, start + requestedPageSize);
 
         return {
-          total: totalMatch ? Number(totalMatch[1]) : ids.length,
-          objectIDs: ids,
+          total,
+          page,
+          pageSize: requestedPageSize,
+          totalPages,
+          objectIDs,
         };
       }
 
@@ -840,11 +968,29 @@
       }
 
       function setBusy(isBusy) {
+        state.isBusy = isBusy;
         queryInput.disabled = isBusy;
         departmentSelect.disabled = isBusy;
         hasImagesInput.disabled = isBusy;
         titleOnlyInput.disabled = isBusy;
         searchButton.disabled = isBusy;
+        updatePagination();
+      }
+
+      function updateResultsTitle() {
+        resultsTitleEl.textContent = state.totalResults > 0
+          ? 'Results (' + state.totalResults + ' total)'
+          : 'Results';
+      }
+
+      function updatePagination() {
+        const hasResults = state.totalResults > 0 && state.totalPages > 0;
+        resultsPaginationEl.style.display = hasResults ? 'flex' : 'none';
+        pageInfoEl.textContent = hasResults
+          ? 'Page ' + state.currentPage + ' of ' + state.totalPages
+          : 'Page 0 of 0';
+        prevPageButton.disabled = !hasResults || state.isBusy || state.currentPage <= 1;
+        nextPageButton.disabled = !hasResults || state.isBusy || state.currentPage >= state.totalPages;
       }
 
       function setStatus(message, isError) {

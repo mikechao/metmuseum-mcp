@@ -42,6 +42,12 @@ export class GetObjectTool {
       const url = `${this.baseURL}${objectId}`;
       const response = await metMuseumRateLimiter.fetch(url.toString());
       if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            content: [{ type: 'text' as const, text: `Museum object id ${objectId} was not found.` }],
+            isError: true,
+          };
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const jsonData = await response.json();

@@ -2,6 +2,11 @@ import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { GetObjectTool } from '../tools/GetObjectTool.js';
 import type { OpenMetExplorerAppResource } from '../ui/OpenMetExplorerAppResource.js';
 
+const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
+  'https://images.metmuseum.org',
+  'data:',
+];
+
 export class ReadResourceHandler {
   private getObjectTool: GetObjectTool;
   private openMetExplorerAppResource: OpenMetExplorerAppResource;
@@ -20,6 +25,13 @@ export class ReadResourceHandler {
           uri,
           mimeType: this.openMetExplorerAppResource.mimeType,
           text: html,
+          _meta: {
+            ui: {
+              csp: {
+                resourceDomains: MET_EXPLORER_CSP_RESOURCE_DOMAINS,
+              },
+            },
+          },
         }],
       };
     }
