@@ -33,7 +33,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "build": "tsc && shx mkdir -p dist/ui/met-explorer && shx cp src/ui/met-explorer/mcp-app.html dist/ui/met-explorer/mcp-app.html && shx chmod +x dist/*.js",
     "lint": "eslint . --ext .ts,.js,.mjs,.cjs --fix",
     "lint:check": "eslint . --ext .ts,.js,.mjs,.cjs",
     "typecheck": "tsc --noEmit",
