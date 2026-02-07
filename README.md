@@ -69,6 +69,48 @@ If there is an image it is added to the Resource of the server via the title of 
   **base64 encoding of jpeg image**
   ```
 
+## Transports
+
+This server supports two transports:
+
+- **Stdio transport (default):** Used by MCP desktop clients (Claude Desktop, LibreChat MCP, etc.).
+- **Streamable HTTP transport:** Run with `--http` to expose an MCP endpoint at `/mcp`.
+
+### Streamable HTTP Transport
+
+Run with `npx` (recommended for end users):
+
+```bash
+npx -y metmuseum-mcp --http
+```
+
+Or run from a local clone:
+
+```bash
+pnpm run build
+node dist/index.js --http
+```
+
+The server listens on:
+
+```text
+http://localhost:3001/mcp
+```
+
+You can control HTTP transport behavior with environment variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PORT` | `3001` | HTTP port used by the Streamable HTTP server. |
+| `HOST` | `0.0.0.0` | Network interface the HTTP server binds to. |
+| `ALLOWED_HOSTS` | _(unset)_ | Optional comma-separated host allowlist for host header validation (example: `localhost,127.0.0.1,my-domain.com`). |
+
+Example:
+
+```bash
+HOST=127.0.0.1 PORT=8080 ALLOWED_HOSTS=localhost,127.0.0.1 npx -y metmuseum-mcp --http
+```
+
 ### Usage with Claude Desktop
 
 ## Via Desktop Extension (DXT)
