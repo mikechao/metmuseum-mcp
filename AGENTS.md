@@ -1,6 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
+
 The codebase is a TypeScript MCP server for The Met API.
 
 - `src/index.ts`: entrypoint (stdio by default, `--http` for Streamable HTTP).
@@ -12,6 +13,7 @@ The codebase is a TypeScript MCP server for The Met API.
 - `.github/workflows/publish.yml`: release workflow for npm publish + DXT packaging.
 
 ## Build, Test, and Development Commands
+
 - `pnpm install`: install dependencies (use `CI=true pnpm install --frozen-lockfile` in CI).
 - `pnpm run build`: compile TypeScript to `dist/` and set executable bits.
 - `pnpm run lint`: run ESLint with auto-fix.
@@ -21,6 +23,7 @@ The codebase is a TypeScript MCP server for The Met API.
 - `node dist/index.js --http`: smoke-test HTTP transport on `http://localhost:3001/mcp`.
 
 ## Coding Style & Naming Conventions
+
 Use the existing ESLint config (`@antfu/eslint-config`) and keep formatting consistent:
 
 - 2-space indentation, semicolons, single quotes.
@@ -29,6 +32,7 @@ Use the existing ESLint config (`@antfu/eslint-config`) and keep formatting cons
 - Prefer small, focused modules; place shared types in `src/types/types.ts`.
 
 ## Testing Guidelines
+
 There is currently no dedicated unit-test framework in this repository. For contributions:
 
 - Run `pnpm run check` before opening a PR.
@@ -36,6 +40,7 @@ There is currently no dedicated unit-test framework in this repository. For cont
 - If adding tests, use `*.test.ts` naming and place them close to the feature or under a `src/__tests__/` folder.
 
 ## Commit & Pull Request Guidelines
+
 Recent commits use short, imperative subjects (for example, `Update README`, `Switch to pnpm`).
 
 - Write concise, action-first commit messages.
