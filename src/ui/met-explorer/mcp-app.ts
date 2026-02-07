@@ -167,6 +167,8 @@ const prevPageButton = document.getElementById('prev-page') as HTMLButtonElement
 const nextPageButton = document.getElementById('next-page') as HTMLButtonElement;
 const pageInfoEl = document.getElementById('page-info') as HTMLDivElement;
 const detailsEl = document.getElementById('details') as HTMLDivElement;
+const modalOverlay = document.getElementById('modal-overlay') as HTMLDivElement;
+const modalCloseBtn = document.getElementById('modal-close') as HTMLButtonElement;
 
 // ============================================================================
 // MCP Runtime Setup
@@ -234,6 +236,22 @@ titleOnlyInput.addEventListener('change', () => {
   }
 });
 
+modalCloseBtn.addEventListener('click', () => {
+  closeModal();
+});
+
+modalOverlay.addEventListener('click', (event: Event) => {
+  if (event.target === modalOverlay) {
+    closeModal();
+  }
+});
+
+document.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && modalOverlay.classList.contains('open')) {
+    closeModal();
+  }
+});
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -261,6 +279,20 @@ async function init(): Promise<void> {
   catch (error) {
     setStatus(errorToMessage(error), true);
   }
+}
+
+// ============================================================================
+// Modal Functions
+// ============================================================================
+
+function openModal(): void {
+  modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(): void {
+  modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ============================================================================
@@ -621,6 +653,7 @@ function renderDetails(): void {
     empty.className = 'empty';
     empty.textContent = 'Select an object to see details.';
     detailsEl.append(empty);
+    closeModal();
     return;
   }
 
@@ -662,6 +695,7 @@ function renderDetails(): void {
   appendDetailRow(table, 'Tags', tagText);
 
   detailsEl.append(table);
+  openModal();
 }
 
 function appendDetailRow(
