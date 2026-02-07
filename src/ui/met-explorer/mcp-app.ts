@@ -226,18 +226,6 @@ nextPageButton.addEventListener('click', () => {
   void goToPage(state.currentPage + 1);
 });
 
-hasImagesInput.addEventListener('change', () => {
-  if (hasImagesInput.checked && titleOnlyInput.checked) {
-    titleOnlyInput.checked = false;
-  }
-});
-
-titleOnlyInput.addEventListener('change', () => {
-  if (titleOnlyInput.checked && hasImagesInput.checked) {
-    hasImagesInput.checked = false;
-  }
-});
-
 modalCloseBtn.addEventListener('click', () => {
   closeModal();
 });
