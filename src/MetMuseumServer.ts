@@ -1,3 +1,4 @@
+import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   CallToolRequestSchema,
@@ -9,7 +10,9 @@ import { ListResourcesHandler } from './handlers/ListResourcesHandler.js';
 import { ReadResourceHandler } from './handlers/ReadResourceHandler.js';
 import { GetObjectTool } from './tools/GetObjectTool.js';
 import { ListDepartmentsTool } from './tools/ListDepartmentsTool.js';
+import { OpenMetExplorerTool } from './tools/OpenMetExplorerTool.js';
 import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
+import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
 export class MetMuseumServer {
   private server: McpServer;
@@ -19,6 +22,8 @@ export class MetMuseumServer {
   private listDepartments: ListDepartmentsTool;
   private search: SearchMuseumObjectsTool;
   private getMuseumObject: GetObjectTool;
+  private openMetExplorer: OpenMetExplorerTool;
+  private openMetExplorerAppResource: OpenMetExplorerAppResource;
 
   constructor() {
     this.server = new McpServer(
@@ -36,16 +41,20 @@ export class MetMuseumServer {
     this.listDepartments = new ListDepartmentsTool();
     this.search = new SearchMuseumObjectsTool();
     this.getMuseumObject = new GetObjectTool(this.server);
+    this.openMetExplorer = new OpenMetExplorerTool();
+    this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
     this.callToolHandler = new CallToolRequestHandler(
       this.listDepartments,
       this.search,
       this.getMuseumObject,
+      this.openMetExplorer,
     );
     this.listResourcesHandler = new ListResourcesHandler(
       this.getMuseumObject,
     );
     this.readResourceHandler = new ReadResourceHandler(
       this.getMuseumObject,
+      this.openMetExplorerAppResource,
     );
     this.setupErrorHandling();
     this.setupTools();
@@ -76,6 +85,20 @@ export class MetMuseumServer {
         inputSchema: this.getMuseumObject.inputSchema,
       },
       this.getMuseumObject.execute.bind(this.getMuseumObject),
+    );
+    registerAppTool(
+      this.server,
+      this.openMetExplorer.name,
+      {
+        description: this.openMetExplorer.description,
+        inputSchema: this.openMetExplorer.inputSchema.shape,
+        _meta: {
+          ui: {
+            resourceUri: this.openMetExplorer.resourceUri,
+          },
+        },
+      },
+      this.openMetExplorer.execute.bind(this.openMetExplorer),
     );
   }
 

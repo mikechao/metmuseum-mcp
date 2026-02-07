@@ -57,6 +57,10 @@ export class SearchMuseumObjectsTool {
       if (parseResult.data.total === 0 || !parseResult.data.objectIDs) {
         return {
           content: [{ type: 'text' as const, text: 'No objects found' }],
+          structuredContent: {
+            total: 0,
+            objectIDs: [],
+          },
           isError: false,
         };
       }
@@ -64,6 +68,10 @@ export class SearchMuseumObjectsTool {
       const text = `Total objects found: ${parseResult.data.total}\nObject IDs: ${parseResult.data.objectIDs.join(', ')}`;
       return {
         content: [{ type: 'text' as const, text }],
+        structuredContent: {
+          total: parseResult.data.total,
+          objectIDs: parseResult.data.objectIDs,
+        },
         isError: false,
       };
     }

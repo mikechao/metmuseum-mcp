@@ -20,11 +20,15 @@ export class ListDepartmentsTool {
       if (!parseResult.success) {
         throw new Error(`Invalid response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
       }
-      const text = parseResult.data.departments.map((department) => {
+      const departments = parseResult.data.departments;
+      const text = departments.map((department) => {
         return `Department ID: ${department.departmentId}, Display Name: ${department.displayName}`;
       }).join('\n');
       return {
         content: [{ type: 'text' as const, text }],
+        structuredContent: {
+          departments,
+        },
         isError: false,
       };
     }

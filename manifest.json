@@ -33,6 +33,10 @@
     {
       "name": "get-museum-object",
       "description": "Get a specific object from The Met containing all open access data about that object, including its image (if the image is available under Open Access)"
+    },
+    {
+      "name": "open-met-explorer",
+      "description": "Open an interactive Met Explorer MCP App to search and browse objects"
     }
   ],
   "keywords": [

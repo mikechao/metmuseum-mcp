@@ -79,7 +79,12 @@ export class GetObjectTool {
         });
       }
 
-      return { content };
+      return {
+        content,
+        structuredContent: {
+          object: data,
+        },
+      };
     }
     catch (error) {
       console.error('Error getting museum object:', error);

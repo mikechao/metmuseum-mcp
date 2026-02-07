@@ -1,17 +1,25 @@
 import type { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { GetObjectTool } from '../tools/GetObjectTool.js';
 import type { ListDepartmentsTool } from '../tools/ListDepartmentsTool.js';
+import type { OpenMetExplorerTool } from '../tools/OpenMetExplorerTool.js';
 import type { SearchMuseumObjectsTool } from '../tools/SearchMuseumObjectsTool.js';
 
 export class CallToolRequestHandler {
   private listDepartments: ListDepartmentsTool;
   private search: SearchMuseumObjectsTool;
   private getMuseumObject: GetObjectTool;
+  private openMetExplorer: OpenMetExplorerTool;
 
-  constructor(listDepartments: ListDepartmentsTool, search: SearchMuseumObjectsTool, getMuseumObject: GetObjectTool) {
+  constructor(
+    listDepartments: ListDepartmentsTool,
+    search: SearchMuseumObjectsTool,
+    getMuseumObject: GetObjectTool,
+    openMetExplorer: OpenMetExplorerTool,
+  ) {
     this.listDepartments = listDepartments;
     this.search = search;
     this.getMuseumObject = getMuseumObject;
+    this.openMetExplorer = openMetExplorer;
   }
 
   public async handleCallTool(request: CallToolRequest) {
@@ -36,6 +44,13 @@ export class CallToolRequestHandler {
           }
           const { objectId, returnImage } = parsedArgs.data;
           return await this.getMuseumObject.execute({ objectId, returnImage });
+        }
+        case this.openMetExplorer.name: {
+          const parsedArgs = this.openMetExplorer.inputSchema.safeParse(args ?? {});
+          if (!parsedArgs.success) {
+            throw new Error(`Invalid arguments for openMetExplorer: ${JSON.stringify(parsedArgs.error.issues, null, 2)}`);
+          }
+          return await this.openMetExplorer.execute(parsedArgs.data);
         }
         default:
           throw new Error(`Unknown tool name: ${name}`);

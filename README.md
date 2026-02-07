@@ -69,6 +69,17 @@ If there is an image it is added to the Resource of the server via the title of 
   **base64 encoding of jpeg image**
   ```
 
+### 4. Open Met Explorer App (open-met-explorer)
+
+Launches an interactive MCP App (`ui://met/explorer.html`) that can search, filter, and inspect objects from within MCP clients that support Apps.
+
+- Inputs (all optional):
+  - `q` (string): Initial search term.
+  - `hasImages` (boolean, default: true): Prefer objects with images.
+  - `title` (boolean, default: false): Search titles only.
+  - `departmentId` (number): Pre-select a department filter.
+  - `objectId` (number): Open a specific object directly.
+
 ## Transports
 
 This server supports two transports:
