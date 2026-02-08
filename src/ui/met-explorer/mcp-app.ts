@@ -1,4 +1,9 @@
-import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } from '@modelcontextprotocol/ext-apps';
+import {
+  App,
+  applyDocumentTheme,
+  applyHostFonts,
+  applyHostStyleVariables,
+} from '@modelcontextprotocol/ext-apps';
 
 /**
  * Met Explorer MCP App - TypeScript Entry Point
@@ -90,15 +95,7 @@ interface ToolResult {
   structuredContent?: Record<string, unknown>;
 }
 
-interface HostContext {
-  theme?: string;
-  styles?: {
-    variables?: Record<string, string | undefined>;
-    css?: {
-      fonts?: string;
-    };
-  };
-}
+type HostContext = ReturnType<App['getHostContext']>;
 
 // ============================================================================
 // Constants
@@ -263,7 +260,7 @@ function closeModal(): void {
 // Context & Launch State
 // ============================================================================
 
-function applyContext(context: HostContext | null | undefined): void {
+function applyContext(context: HostContext): void {
   if (!context) {
     return;
   }
