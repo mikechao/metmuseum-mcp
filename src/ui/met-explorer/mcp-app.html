@@ -402,6 +402,35 @@
         border: none;
       }
 
+      .modal-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .modal-context-btn {
+        width: auto;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .modal-context-btn.added {
+        background: var(--accent-soft);
+        border-color: var(--line);
+        color: var(--accent);
+      }
+
+      .modal-context-btn.added:disabled {
+        cursor: default;
+        opacity: 1;
+      }
+
       .modal-close {
         width: 32px;
         height: 32px;
@@ -517,7 +546,10 @@
       <article class="modal-panel">
         <div class="modal-header">
           <div class="panel-title">Object Details</div>
-          <button id="modal-close" class="modal-close" type="button" aria-label="Close">&times;</button>
+          <div class="modal-actions">
+            <button id="add-context-btn" class="modal-context-btn" type="button" disabled>Add to context</button>
+            <button id="modal-close" class="modal-close" type="button" aria-label="Close">&times;</button>
+          </div>
         </div>
         <div id="details" class="detail-body">
           <div class="empty">Select an object to see details.</div>

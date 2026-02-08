@@ -29,6 +29,8 @@ interface AppState {
   results: ResultCard[];
   selectedObject: ObjectData | null;
   selectedImageData: string | null;
+  selectedImageMimeType: string | null;
+  lastAddedContextObjectId: string | null;
   isImageZoomed: boolean;
   latestSearchToken: number;
   searchRequest: SearchRequest | null;
@@ -39,6 +41,7 @@ interface AppState {
   isBusy: boolean;
   isResultsLoading: boolean;
   isDetailsLoading: boolean;
+  isAddingToContext: boolean;
 }
 
 interface SearchRequest {
@@ -109,6 +112,8 @@ const state: AppState = {
   results: [],
   selectedObject: null,
   selectedImageData: null,
+  selectedImageMimeType: null,
+  lastAddedContextObjectId: null,
   isImageZoomed: false,
   latestSearchToken: 0,
   searchRequest: null,
@@ -119,6 +124,7 @@ const state: AppState = {
   isBusy: false,
   isResultsLoading: false,
   isDetailsLoading: false,
+  isAddingToContext: false,
 };
 
 // ============================================================================
@@ -141,6 +147,7 @@ const pageInfoEl = document.getElementById('page-info') as HTMLDivElement;
 const detailsEl = document.getElementById('details') as HTMLDivElement;
 const modalOverlay = document.getElementById('modal-overlay') as HTMLDivElement;
 const modalCloseBtn = document.getElementById('modal-close') as HTMLButtonElement;
+const addContextBtn = document.getElementById('add-context-btn') as HTMLButtonElement;
 
 // ============================================================================
 // MCP Runtime Setup
@@ -192,6 +199,10 @@ modalCloseBtn.addEventListener('click', () => {
   closeModal();
 });
 
+addContextBtn.addEventListener('click', () => {
+  void addSelectedObjectToContext();
+});
+
 modalOverlay.addEventListener('click', (event: Event) => {
   if (event.target === modalOverlay) {
     closeModal();
@@ -213,6 +224,7 @@ async function init(): Promise<void> {
     await app.connect();
     applyContext(app.getHostContext());
     stopHeightSync = startHeightSync();
+    updateAddContextButton();
 
     await loadDepartments();
     updatePagination();
@@ -250,9 +262,11 @@ function closeModal(): void {
   if (hadSelection) {
     state.selectedObject = null;
     state.selectedImageData = null;
+    state.selectedImageMimeType = null;
     state.isImageZoomed = false;
     renderResults();
   }
+  updateAddContextButton();
 }
 
 // ============================================================================
@@ -358,6 +372,7 @@ async function runSearch(): Promise<void> {
   state.totalPages = 0;
   state.selectedObject = null;
   state.selectedImageData = null;
+  state.selectedImageMimeType = null;
   state.isImageZoomed = false;
   updateResultsTitle();
   renderDetails();
@@ -643,8 +658,10 @@ async function loadObjectDetails(objectId: number): Promise<void> {
     });
 
     const objectData = parseObjectResult(result);
+    const imageBlock = getImageContent(result);
     state.selectedObject = objectData;
-    state.selectedImageData = getImageData(result);
+    state.selectedImageData = imageBlock?.data ?? null;
+    state.selectedImageMimeType = imageBlock?.mimeType ?? null;
     state.isImageZoomed = false;
 
     renderDetails();
@@ -668,6 +685,8 @@ function renderDetails(): void {
     closeModal();
     return;
   }
+
+  updateAddContextButton();
 
   const objectData = state.selectedObject;
   const imageUrl = getSelectedImageUrl(objectData);
@@ -759,13 +778,155 @@ function renderZoomedImage(imageUrl: string | null, objectData: ObjectData): voi
 }
 
 function getSelectedImageUrl(objectData: ObjectData): string | null {
-  if (state.selectedImageData) {
-    return `data:image/jpeg;base64,${state.selectedImageData}`;
+  if (state.selectedImageData && state.selectedImageMimeType) {
+    return `data:${state.selectedImageMimeType};base64,${state.selectedImageData}`;
   }
   if (objectData.primaryImage) {
     return objectData.primaryImage;
   }
   return null;
+}
+
+function getObjectContextId(objectData: ObjectData | null): string | null {
+  if (!objectData) {
+    return null;
+  }
+
+  const { objectID } = objectData;
+  if (typeof objectID !== 'number' && typeof objectID !== 'string') {
+    return null;
+  }
+
+  const normalized = String(objectID).trim();
+  return normalized || null;
+}
+
+function updateAddContextButton(): void {
+  const selectedObjectId = getObjectContextId(state.selectedObject);
+  const isAdded = Boolean(
+    selectedObjectId
+    && state.lastAddedContextObjectId
+    && selectedObjectId === state.lastAddedContextObjectId,
+  );
+  const canAdd = state.selectedObject !== null && !state.isAddingToContext && !isAdded;
+
+  addContextBtn.disabled = !canAdd;
+  addContextBtn.classList.toggle('added', isAdded && !state.isAddingToContext);
+  addContextBtn.textContent = state.isAddingToContext
+    ? 'Adding...'
+    : isAdded
+      ? 'Added'
+      : 'Add to context';
+}
+
+function buildObjectContextText(objectData: ObjectData): string {
+  const lines = [
+    'Met Museum object added from Met Explorer:',
+    `- Object ID: ${stringOrFallback(
+      objectData.objectID === undefined ? undefined : String(objectData.objectID),
+      'Unknown',
+    )}`,
+    `- Title: ${stringOrFallback(objectData.title, 'Untitled')}`,
+    `- Artist: ${stringOrFallback(objectData.artistDisplayName, 'Unknown artist')}`,
+    objectData.artistDisplayBio ? `- Artist Bio: ${objectData.artistDisplayBio}` : '',
+    objectData.department ? `- Department: ${objectData.department}` : '',
+    objectData.objectDate ? `- Date: ${objectData.objectDate}` : '',
+    objectData.medium ? `- Medium: ${objectData.medium}` : '',
+    objectData.dimensions ? `- Dimensions: ${objectData.dimensions}` : '',
+    objectData.creditLine ? `- Credit Line: ${objectData.creditLine}` : '',
+  ].filter(Boolean);
+
+  const tags = Array.isArray(objectData.tags)
+    ? objectData.tags
+        .map(tag => tag?.term)
+        .filter((term): term is string => typeof term === 'string' && term.length > 0)
+    : [];
+
+  if (tags.length) {
+    lines.push(`- Tags: ${tags.join(', ')}`);
+  }
+
+  return lines.join('\n');
+}
+
+async function addSelectedObjectToContext(): Promise<void> {
+  const objectData = state.selectedObject;
+  if (!objectData || state.isAddingToContext) {
+    return;
+  }
+
+  const capabilities = app.getHostCapabilities()?.updateModelContext;
+
+  state.isAddingToContext = true;
+  updateAddContextButton();
+
+  try {
+    const objectDetailsText = buildObjectContextText(objectData);
+    const imageData = state.selectedImageData;
+    const imageMimeType = state.selectedImageMimeType;
+    const hasImagePayload = Boolean(imageData && imageMimeType);
+    const canSendImagePayload = hasImagePayload
+      && (capabilities ? Boolean(capabilities.image) : true);
+    const canSendStructuredContent = Boolean(capabilities?.structuredContent);
+    const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
+      { type: 'text', text: objectDetailsText },
+    ];
+
+    if (imageData && imageMimeType && canSendImagePayload) {
+      content.push({
+        type: 'image',
+        data: imageData,
+        mimeType: imageMimeType,
+      });
+    }
+
+    await app.updateModelContext({
+      content,
+      structuredContent: canSendStructuredContent
+        ? {
+            source: 'met-explorer-app',
+            object: objectData,
+            hasEmbeddedImage: canSendImagePayload,
+          }
+        : undefined,
+    });
+
+    state.lastAddedContextObjectId = getObjectContextId(objectData);
+
+    if (canSendImagePayload) {
+      setStatus('Object details and image were added to model context.', false);
+      return;
+    }
+
+    if (hasImagePayload && !canSendImagePayload) {
+      setStatus('Object details were added, but this host does not accept image context blocks.', false);
+      return;
+    }
+
+    setStatus('Object details were added to model context.', false);
+  }
+  catch (error) {
+    const canRetryTextOnly = Boolean(state.selectedImageData && state.selectedImageMimeType);
+    if (!canRetryTextOnly) {
+      setStatus(errorToMessage(error), true);
+      return;
+    }
+
+    try {
+      await app.updateModelContext({
+        content: [{ type: 'text', text: buildObjectContextText(objectData) }],
+      });
+      state.lastAddedContextObjectId = getObjectContextId(objectData);
+      setStatus('Object details were added, but image context was rejected by this host.', false);
+    }
+    catch (retryError) {
+      setStatus(errorToMessage(retryError), true);
+    }
+  }
+  finally {
+    state.isAddingToContext = false;
+    updateAddContextButton();
+  }
 }
 
 function appendDetailRow(
@@ -973,13 +1134,15 @@ function extractText(result: ToolResult): string {
     .trim();
 }
 
-function getImageData(result: ToolResult): string | null {
+function getImageContent(
+  result: ToolResult,
+): Extract<ToolContentBlock, { type: 'image' }> | null {
   if (!Array.isArray(result?.content)) {
     return null;
   }
 
   const block = result.content.find(isImageContentBlock);
-  return block ? block.data : null;
+  return block ?? null;
 }
 
 function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
