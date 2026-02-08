@@ -83,18 +83,9 @@ interface ParsedSearchResult {
   objectIDs: number[];
 }
 
-interface ContentBlock {
-  type: string;
-  text?: string;
-  data?: string;
-}
-
-interface ToolResult {
-  isError?: boolean;
-  content?: ContentBlock[];
-  structuredContent?: Record<string, unknown>;
-}
-
+type ToolInputParams = Parameters<NonNullable<App['ontoolinput']>>[0];
+type ToolResult = Awaited<ReturnType<App['callServerTool']>>;
+type ToolContentBlock = NonNullable<ToolResult['content']>[number];
 type HostContext = ReturnType<App['getHostContext']>;
 
 // ============================================================================
@@ -156,7 +147,7 @@ app.onhostcontextchanged = (contextUpdate) => {
   applyContext(contextUpdate);
 };
 
-app.ontoolinput = (params: { arguments: Record<string, unknown> }) => {
+app.ontoolinput = (params: ToolInputParams) => {
   applyLaunchState(params.arguments);
 };
 
@@ -891,8 +882,8 @@ function extractText(result: ToolResult): string {
   }
 
   return result.content
-    .filter(block => block.type === 'text' && typeof block.text === 'string')
-    .map(block => block.text!)
+    .filter(isTextContentBlock)
+    .map(block => block.text)
     .join('\n')
     .trim();
 }
@@ -902,10 +893,8 @@ function getImageData(result: ToolResult): string | null {
     return null;
   }
 
-  const block = result.content.find(
-    item => item.type === 'image' && typeof item.data === 'string',
-  );
-  return block ? block.data! : null;
+  const block = result.content.find(isImageContentBlock);
+  return block ? block.data : null;
 }
 
 function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
@@ -914,6 +903,16 @@ function getStructuredValue(result: ToolResult): Record<string, unknown> | null 
     return value;
   }
   return null;
+}
+
+function isTextContentBlock(block: ToolContentBlock): block is Extract<ToolContentBlock, { type: 'text' }> {
+  return block.type === 'text';
+}
+
+function isImageContentBlock(
+  block: ToolContentBlock,
+): block is Extract<ToolContentBlock, { type: 'image' }> {
+  return block.type === 'image';
 }
 
 function setBusy(isBusy: boolean): void {
