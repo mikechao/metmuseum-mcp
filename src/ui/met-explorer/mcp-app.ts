@@ -83,6 +83,11 @@ interface ParsedSearchResult {
   objectIDs: number[];
 }
 
+interface HydrationResult {
+  cards: ResultCard[];
+  failedCount: number;
+}
+
 type ToolInputParams = Parameters<NonNullable<App['ontoolinput']>>[0];
 type ToolResult = Awaited<ReturnType<App['callServerTool']>>;
 type ToolContentBlock = NonNullable<ToolResult['content']>[number];
@@ -403,17 +408,25 @@ async function loadSearchPage(page: number): Promise<void> {
     }
 
     setStatus(`Loading object previews for page ${state.currentPage}...`, false);
-    const hydrated = await hydrateObjects(parsed.objectIDs, token);
+    const hydration = await hydrateObjects(parsed.objectIDs, token);
 
     if (token !== state.latestSearchToken) {
       return;
     }
 
-    state.results = hydrated;
+    state.results = hydration.cards;
     state.isResultsLoading = false;
     renderResults();
+    if (!hydration.cards.length) {
+      setStatus('Could not load object previews for this page. Please try again.', true);
+      return;
+    }
+
+    const baseMessage = `Loaded ${hydration.cards.length} previews (page ${state.currentPage} of ${state.totalPages}).`;
     setStatus(
-      `Loaded ${hydrated.length} previews (page ${state.currentPage} of ${state.totalPages}).`,
+      hydration.failedCount > 0
+        ? `${baseMessage} ${hydration.failedCount} preview(s) failed to load.`
+        : baseMessage,
       false,
     );
 
@@ -442,37 +455,45 @@ async function loadSearchPage(page: number): Promise<void> {
 // Object Hydration
 // ============================================================================
 
-async function hydrateObjects(objectIds: number[], token: number): Promise<ResultCard[]> {
-  const results: ResultCard[] = [];
+async function hydrateObjects(objectIds: number[], token: number): Promise<HydrationResult> {
+  const ordered: Array<ResultCard | null> = Array.from({ length: objectIds.length }, () => null);
+  let failedCount = 0;
 
-  await runWithConcurrency(objectIds, 4, async (objectId: number) => {
-    if (token !== state.latestSearchToken) {
-      return;
-    }
-
-    try {
-      const result = await callTool('get-museum-object', {
-        objectId,
-        returnImage: false,
-      });
-      const parsedObject = parseObjectResult(result);
-      if (!parsedObject) {
+  await runWithConcurrency(
+    objectIds.map((objectId, index) => ({ objectId, index })),
+    4,
+    async ({ objectId, index }: { objectId: number; index: number }) => {
+      if (token !== state.latestSearchToken) {
         return;
       }
-      results.push({
-        objectID: Number(parsedObject.objectID ?? objectId),
-        title: stringOrFallback(parsedObject.title, 'Untitled'),
-        artistDisplayName: stringOrFallback(parsedObject.artistDisplayName, 'Unknown artist'),
-        department: stringOrFallback(parsedObject.department, ''),
-        primaryImageSmall: stringOrFallback(parsedObject.primaryImageSmall, ''),
-      });
-    }
-    catch {
-      // Swallow per-object failures so one bad object does not block the whole grid.
-    }
-  });
 
-  return results;
+      try {
+        const result = await callTool('get-museum-object', {
+          objectId,
+          returnImage: false,
+        });
+        const parsedObject = parseObjectResult(result);
+        if (!parsedObject) {
+          return;
+        }
+        ordered[index] = {
+          objectID: Number(parsedObject.objectID ?? objectId),
+          title: stringOrFallback(parsedObject.title, 'Untitled'),
+          artistDisplayName: stringOrFallback(parsedObject.artistDisplayName, 'Unknown artist'),
+          department: stringOrFallback(parsedObject.department, ''),
+          primaryImageSmall: stringOrFallback(parsedObject.primaryImageSmall, ''),
+        };
+      }
+      catch {
+        failedCount += 1;
+      }
+    },
+  );
+
+  return {
+    cards: ordered.filter((item): item is ResultCard => item !== null),
+    failedCount,
+  };
 }
 
 async function runWithConcurrency<T>(
@@ -539,7 +560,7 @@ function renderResults(): void {
   for (const result of state.results) {
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = `result-card${state.selectedObject?.objectID === result.objectID ? ' active' : ''}`;
+    card.className = `result-card${objectIdEquals(state.selectedObject?.objectID, result.objectID) ? ' active' : ''}`;
     card.disabled = state.isDetailsLoading;
     card.addEventListener('click', () => {
       if (state.isDetailsLoading) {
@@ -957,6 +978,16 @@ function stringOrFallback(value: string | undefined, fallback: string): string {
     return value;
   }
   return fallback;
+}
+
+function objectIdEquals(
+  left: number | string | undefined,
+  right: number | string | undefined,
+): boolean {
+  if (left === undefined || right === undefined) {
+    return false;
+  }
+  return String(left) === String(right);
 }
 
 function startHeightSync(): (() => void) | null {
