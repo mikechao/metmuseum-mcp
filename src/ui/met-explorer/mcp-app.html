@@ -289,6 +289,19 @@
         flex: 1;
       }
 
+      .detail-body.zoomed {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .detail-image-wrap {
+        position: relative;
+      }
+
       .detail-image {
         width: 100%;
         max-height: 220px;
@@ -296,6 +309,46 @@
         border-radius: 8px;
         background: var(--image-placeholder);
         border: 1px solid var(--line);
+      }
+
+      .detail-image-zoomed {
+        flex: 1;
+        max-height: calc(100vh - 120px);
+        min-height: 260px;
+      }
+
+      .image-zoom-btn {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.22);
+      }
+
+      .image-zoom-btn:hover {
+        border-color: var(--accent);
+      }
+
+      .zoom-back-btn {
+        width: auto;
+        min-height: 34px;
+        padding: 0 12px;
+        background: var(--input-bg);
+        color: var(--text);
+        border: 1px solid var(--line);
+        align-self: flex-start;
       }
 
       /* Modal Overlay */

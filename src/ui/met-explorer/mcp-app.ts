@@ -29,6 +29,7 @@ interface AppState {
   results: ResultCard[];
   selectedObject: ObjectData | null;
   selectedImageData: string | null;
+  isImageZoomed: boolean;
   latestSearchToken: number;
   searchRequest: SearchRequest | null;
   currentPage: number;
@@ -108,6 +109,7 @@ const state: AppState = {
   results: [],
   selectedObject: null,
   selectedImageData: null,
+  isImageZoomed: false,
   latestSearchToken: 0,
   searchRequest: null,
   currentPage: 1,
@@ -248,6 +250,7 @@ function closeModal(): void {
   if (hadSelection) {
     state.selectedObject = null;
     state.selectedImageData = null;
+    state.isImageZoomed = false;
     renderResults();
   }
 }
@@ -355,6 +358,7 @@ async function runSearch(): Promise<void> {
   state.totalPages = 0;
   state.selectedObject = null;
   state.selectedImageData = null;
+  state.isImageZoomed = false;
   updateResultsTitle();
   renderDetails();
   updatePagination();
@@ -641,6 +645,7 @@ async function loadObjectDetails(objectId: number): Promise<void> {
     const objectData = parseObjectResult(result);
     state.selectedObject = objectData;
     state.selectedImageData = getImageData(result);
+    state.isImageZoomed = false;
 
     renderDetails();
     setStatus(`Loaded object ${objectId}.`, false);
@@ -653,6 +658,7 @@ async function loadObjectDetails(objectId: number): Promise<void> {
 
 function renderDetails(): void {
   detailsEl.innerHTML = '';
+  detailsEl.classList.remove('zoomed');
 
   if (!state.selectedObject) {
     const empty = document.createElement('div');
@@ -664,15 +670,35 @@ function renderDetails(): void {
   }
 
   const objectData = state.selectedObject;
+  const imageUrl = getSelectedImageUrl(objectData);
 
-  if (state.selectedImageData || objectData.primaryImage) {
+  if (state.isImageZoomed) {
+    renderZoomedImage(imageUrl, objectData);
+    openModal();
+    return;
+  }
+
+  if (imageUrl) {
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'detail-image-wrap';
+
     const image = document.createElement('img');
     image.className = 'detail-image';
     image.alt = stringOrFallback(objectData.title, 'Artwork image');
-    image.src = state.selectedImageData
-      ? `data:image/jpeg;base64,${state.selectedImageData}`
-      : objectData.primaryImage!;
-    detailsEl.append(image);
+    image.src = imageUrl;
+
+    const zoomButton = document.createElement('button');
+    zoomButton.type = 'button';
+    zoomButton.className = 'image-zoom-btn';
+    zoomButton.ariaLabel = 'View larger image';
+    zoomButton.textContent = '🔍';
+    zoomButton.addEventListener('click', () => {
+      state.isImageZoomed = true;
+      renderDetails();
+    });
+
+    imageWrap.append(image, zoomButton);
+    detailsEl.append(imageWrap);
   }
 
   const title = document.createElement('h2');
@@ -702,6 +728,44 @@ function renderDetails(): void {
 
   detailsEl.append(table);
   openModal();
+}
+
+function renderZoomedImage(imageUrl: string | null, objectData: ObjectData): void {
+  detailsEl.classList.add('zoomed');
+
+  if (!imageUrl) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No image available for this object.';
+    detailsEl.append(empty);
+    return;
+  }
+
+  const image = document.createElement('img');
+  image.className = 'detail-image detail-image-zoomed';
+  image.alt = stringOrFallback(objectData.title, 'Artwork image');
+  image.src = imageUrl;
+
+  const backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'zoom-back-btn';
+  backButton.textContent = 'Back to details';
+  backButton.addEventListener('click', () => {
+    state.isImageZoomed = false;
+    renderDetails();
+  });
+
+  detailsEl.append(image, backButton);
+}
+
+function getSelectedImageUrl(objectData: ObjectData): string | null {
+  if (state.selectedImageData) {
+    return `data:image/jpeg;base64,${state.selectedImageData}`;
+  }
+  if (objectData.primaryImage) {
+    return objectData.primaryImage;
+  }
+  return null;
 }
 
 function appendDetailRow(
