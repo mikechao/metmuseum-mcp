@@ -1,3 +1,5 @@
+import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } from '@modelcontextprotocol/ext-apps';
+
 /**
  * Met Explorer MCP App - TypeScript Entry Point
  *
@@ -91,39 +93,12 @@ interface ToolResult {
 interface HostContext {
   theme?: string;
   styles?: {
-    variables?: Record<string, string>;
+    variables?: Record<string, string | undefined>;
     css?: {
       fonts?: string;
     };
   };
 }
-
-// MCP Apps Runtime types
-interface MCPApp {
-  connect: () => Promise<void>;
-  getHostContext: () => HostContext | null;
-  callServerTool: (params: { name: string; arguments: Record<string, unknown> }) => Promise<ToolResult>;
-  sendSizeChanged: (size: { height: number }) => void;
-  onhostcontextchanged: ((context: HostContext) => void) | null;
-  ontoolinput: ((params: { arguments: Record<string, unknown> }) => void) | null;
-  ontoolresult: ((params: ToolResult) => void) | null;
-  onteardown: (() => Promise<Record<string, unknown>>) | null;
-}
-
-interface MCPAppsRuntime {
-  App: new (
-    info: { name: string; version: string },
-    options: Record<string, unknown>,
-    config: { autoResize: boolean }
-  ) => MCPApp;
-  applyDocumentTheme: (theme: string) => void;
-  applyHostFonts: (fonts: string) => void;
-  applyHostStyleVariables: (variables: Record<string, string>) => void;
-}
-
-declare const globalThis: {
-  __MCP_APPS_RUNTIME__?: MCPAppsRuntime;
-};
 
 // ============================================================================
 // Constants
@@ -176,19 +151,11 @@ const modalCloseBtn = document.getElementById('modal-close') as HTMLButtonElemen
 // MCP Runtime Setup
 // ============================================================================
 
-const runtime = globalThis.__MCP_APPS_RUNTIME__;
-if (!runtime) {
-  setStatus('Could not load MCP Apps runtime in this host.', true);
-  throw new Error('Failed to load @modelcontextprotocol/ext-apps runtime');
-}
-
-const { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } = runtime;
-
 // Hosts handle width differently; sync height only to avoid narrow-width lock-in.
 const app = new App({ name: 'met-explorer-app', version: '0.1.0' }, {}, { autoResize: false });
 let stopHeightSync: (() => void) | null = null;
 
-app.onhostcontextchanged = (contextUpdate: HostContext) => {
+app.onhostcontextchanged = (contextUpdate) => {
   applyContext(contextUpdate);
 };
 
@@ -296,7 +263,7 @@ function closeModal(): void {
 // Context & Launch State
 // ============================================================================
 
-function applyContext(context: HostContext | null): void {
+function applyContext(context: HostContext | null | undefined): void {
   if (!context) {
     return;
   }

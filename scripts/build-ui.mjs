@@ -25,6 +25,7 @@ async function build() {
   });
 
   const bundledCode = result.outputFiles[0].text;
+  const safeBundledCode = bundledCode.replace(/<\/script/gi, '<\\/script');
 
   // Read the HTML template
   const htmlTemplate = fs.readFileSync(`${SRC_DIR}/mcp-app.html`, 'utf-8');
@@ -32,7 +33,7 @@ async function build() {
   // Replace the external script reference with inline script
   const finalHtml = htmlTemplate.replace(
     '<script src="mcp-app.js"></script>',
-    `<script>\n${bundledCode}</script>`,
+    () => `<script>\n${safeBundledCode}</script>`,
   );
 
   // Write the output HTML

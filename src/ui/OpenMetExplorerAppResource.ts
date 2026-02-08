@@ -1,24 +1,28 @@
 import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const require = createRequire(import.meta.url);
-const appWithDepsPath = require.resolve('@modelcontextprotocol/ext-apps/app-with-deps');
-
-const APP_RUNTIME_TOKEN = '__APP_WITH_DEPS_RUNTIME_CODE__';
-const RUNTIME_GLOBAL_NAME = '__MCP_APPS_RUNTIME__';
-const REQUIRED_RUNTIME_EXPORTS = [
-  'App',
-  'applyDocumentTheme',
-  'applyHostFonts',
-  'applyHostStyleVariables',
-] as const;
+const uiBaseDir = path.dirname(fileURLToPath(import.meta.url));
 const uiHtmlPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
+  uiBaseDir,
   'met-explorer',
   'mcp-app.html',
 );
+const uiScriptPath = path.join(
+  uiBaseDir,
+  'met-explorer',
+  'mcp-app.js',
+);
+const distUiHtmlPath = path.join(
+  uiBaseDir,
+  '..',
+  '..',
+  'dist',
+  'ui',
+  'met-explorer',
+  'mcp-app.html',
+);
+const APP_SCRIPT_TAG = '<script src="mcp-app.js"></script>';
 
 export interface OpenMetExplorerLaunchState {
   q?: string;
@@ -40,54 +44,42 @@ export class OpenMetExplorerAppResource {
       return this.htmlCache;
     }
 
-    const [htmlTemplate, appWithDepsCode] = await Promise.all([
-      readFile(uiHtmlPath, 'utf-8'),
-      readFile(appWithDepsPath, 'utf-8'),
-    ]);
-
-    const runtimeScript = buildRuntimeScript(appWithDepsCode);
-    if (!htmlTemplate.includes(APP_RUNTIME_TOKEN)) {
-      throw new Error(`UI template missing token: ${APP_RUNTIME_TOKEN}`);
-    }
-
-    this.htmlCache = htmlTemplate.replace(APP_RUNTIME_TOKEN, () => runtimeScript);
+    const html = await readFile(uiHtmlPath, 'utf-8');
+    this.htmlCache = await resolveAppHtml(html);
     return this.htmlCache;
   }
 }
 
-function buildRuntimeScript(appWithDepsCode: string): string {
-  const exportMatch = appWithDepsCode.match(/export\s*\{([\s\S]*?)\};?\s*$/);
-  if (!exportMatch) {
-    throw new Error('Could not find export block in @modelcontextprotocol/ext-apps/app-with-deps.');
+async function resolveAppHtml(html: string): Promise<string> {
+  if (!html.includes(APP_SCRIPT_TAG)) {
+    return html;
   }
 
-  const exportMap = new Map<string, string>();
-  const exportEntries = exportMatch[1]
-    .split(',')
-    .map(entry => entry.trim())
-    .filter(Boolean);
+  try {
+    const appScript = await readFile(uiScriptPath, 'utf-8');
+    return html.replace(APP_SCRIPT_TAG, `<script>\n${toSafeInlineScript(appScript)}</script>`);
+  }
+  catch {
+    // In source-mode runs, the JS bundle may not exist yet.
+  }
 
-  for (const entry of exportEntries) {
-    const match = entry.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
-    if (!match) {
-      continue;
+  if (path.resolve(distUiHtmlPath) !== path.resolve(uiHtmlPath)) {
+    try {
+      const distHtml = await readFile(distUiHtmlPath, 'utf-8');
+      if (!distHtml.includes(APP_SCRIPT_TAG)) {
+        return distHtml;
+      }
     }
-    const local = match[1];
-    const exported = match[2] ?? local;
-    exportMap.set(exported, local);
+    catch {
+      // Ignore and throw a focused error below.
+    }
   }
 
-  const missing = REQUIRED_RUNTIME_EXPORTS.filter(name => !exportMap.has(name));
-  if (missing.length > 0) {
-    throw new Error(`Missing required runtime exports: ${missing.join(', ')}`);
-  }
+  throw new Error(
+    'UI bundle is missing. Run "pnpm run build" to generate an inline mcp-app bundle for CSP-safe loading.',
+  );
+}
 
-  const runtimeEntries = REQUIRED_RUNTIME_EXPORTS.map((name) => {
-    const local = exportMap.get(name)!;
-    return `  ${name}: ${local}`;
-  }).join(',\n');
-  const runtimeAssignment = `\n;globalThis.${RUNTIME_GLOBAL_NAME} = {\n${runtimeEntries}\n};\n`;
-
-  const withoutExportBlock = appWithDepsCode.replace(/export\s*\{[\s\S]*?\};?\s*$/, runtimeAssignment);
-  return withoutExportBlock.replace(/<\/script/gi, '<\\/script');
+function toSafeInlineScript(script: string): string {
+  return script.replace(/<\/script/gi, '<\\/script');
 }
