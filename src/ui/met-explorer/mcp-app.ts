@@ -98,7 +98,7 @@ type HostContext = ReturnType<App['getHostContext']>;
 // Constants
 // ============================================================================
 
-const DEFAULT_PAGE_SIZE = 24;
+const DEFAULT_PAGE_SIZE = 12;
 
 // ============================================================================
 // State
