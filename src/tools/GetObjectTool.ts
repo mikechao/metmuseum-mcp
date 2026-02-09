@@ -6,7 +6,7 @@ import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 export class GetObjectTool {
   public readonly name: string = 'get-museum-object';
   public readonly description: string = 'Get a museum object by its ID, from the Metropolitan Museum of Art Collection. '
-    + 'Use this for per-item details during curated walkthroughs once object IDs are known.';
+    + 'Use this when the user asks for deeper details on a specific object ID.';
 
   public readonly inputSchema = z.object({
     objectId: z.number().describe('The ID of the museum object to retrieve'),

@@ -831,6 +831,10 @@ function buildSearchResultsContextText(): string | null {
 
   return [
     'The user is looking at the following Met search results (verified title-to-object ID pairs):',
+    'For follow-up curation or walkthrough requests, use this list as the default source unless the user asks to broaden scope.',
+    'Start with guidance from this snapshot without extra tool calls.',
+    'Call get-museum-object only when the user asks for deeper detail on a specific item.',
+    'Do not invent object IDs or titles that are not in this page snapshot.',
     queryLine,
     pageLine,
     '',

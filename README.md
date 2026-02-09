@@ -52,7 +52,7 @@ Get a specific object from The Met containing all open access data about that ob
 
 If there is an image it is added to the Resource of the server via the title of the object.
 
-Use this tool for per-item details in a curated walkthrough once you already have an `objectId`.
+Use this tool when the user asks for deeper details on a specific artwork and you already have an `objectId`.
 
 - Inputs:
   - `objectId` (number): The id of the object to retrieve
@@ -81,7 +81,7 @@ Launches an interactive MCP App (`ui://met/explorer.html`) that can search, filt
 Recommended flow:
 
 - Use `open-met-explorer` to launch and browse live search results (pass `q` to start searching immediately).
-- Once you have a curated list of `objectId` values, use `get-museum-object` for each item instead of relaunching the explorer for every artwork.
+- After creating a curated list from current results, use `get-museum-object` only for items the user wants to explore in depth.
 
 - Inputs (all optional):
   - `q` (string): Initial search term.

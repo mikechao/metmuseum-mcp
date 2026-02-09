@@ -26,7 +26,9 @@ Use this app to search, filter, paginate, and inspect Met objects.
 - While the app is open, prefer guiding the user using app results.
 - Treat titles and object IDs shown in the app as source of truth for follow-up navigation.
 - Do not relaunch this tool for every individual artwork in a curated list.
-- For each item in a walkthrough, call get-museum-object with the chosen objectId.
+- For follow-up curation or walkthrough requests, default to the current app results unless the user asks to broaden scope.
+- Start with a concise tour from the current results snapshot without extra tool calls.
+- Call get-museum-object only when the user asks to go deeper on a specific item, asks for the next item with full details, or requests image-level detail.
 - Use search-museum-objects as a fallback when app interaction is unavailable or the user asks for raw ID lists.
 - Explore in the UI first (instead of many raw tool calls).
 - Ask the user to click "Add to context" when they want a selected object used in chat.
