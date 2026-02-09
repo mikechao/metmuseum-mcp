@@ -25,10 +25,12 @@ export class GetObjectTool {
   public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>) {
     try {
       const data = await this.apiClient.getObject(objectId);
-      const text = `Title: ${data.title}\n`
+      const text = `Object ID: ${data.objectID}\n`
+        + `Title: ${data.title}\n`
         + `${data.artistDisplayName ? `Artist: ${data.artistDisplayName}\n` : ''}`
         + `${data.artistDisplayBio ? `Artist Bio: ${data.artistDisplayBio}\n` : ''}`
         + `${data.department ? `Department: ${data.department}\n` : ''}`
+        + `${data.objectDate ? `Date: ${data.objectDate}\n` : ''}`
         + `${data.creditLine ? `Credit Line: ${data.creditLine}\n` : ''}`
         + `${data.medium ? `Medium: ${data.medium}\n` : ''}`
         + `${data.dimensions ? `Dimensions: ${data.dimensions}\n` : ''}`

@@ -33,6 +33,7 @@ interface AppState {
   lastAddedContextObjectId: string | null;
   isImageZoomed: boolean;
   latestSearchToken: number;
+  latestDetailsToken: number;
   searchRequest: SearchRequest | null;
   currentPage: number;
   totalResults: number;
@@ -116,6 +117,7 @@ const state: AppState = {
   lastAddedContextObjectId: null,
   isImageZoomed: false,
   latestSearchToken: 0,
+  latestDetailsToken: 0,
   searchRequest: null,
   currentPage: 1,
   totalResults: 0,
@@ -366,6 +368,8 @@ async function runSearch(): Promise<void> {
   }
 
   state.searchRequest = args;
+  // Invalidate in-flight details requests so stale responses cannot re-open the modal.
+  state.latestDetailsToken += 1;
   state.pageSize = DEFAULT_PAGE_SIZE;
   state.currentPage = 1;
   state.totalResults = 0;
@@ -646,6 +650,7 @@ async function loadObjectDetails(objectId: number): Promise<void> {
     return;
   }
 
+  const token = ++state.latestDetailsToken;
   state.isDetailsLoading = true;
   renderResults();
   detailsEl.innerHTML = '<div class="skeleton" style="height: 260px; border-radius: 8px;"></div>';
@@ -658,6 +663,10 @@ async function loadObjectDetails(objectId: number): Promise<void> {
     });
 
     const objectData = parseObjectResult(result);
+    if (token !== state.latestDetailsToken) {
+      return;
+    }
+
     const imageBlock = getImageContent(result);
     state.selectedObject = objectData;
     state.selectedImageData = imageBlock?.data ?? null;
@@ -1164,6 +1173,7 @@ function parseObjectResult(result: ToolResult): ObjectData | null {
   const text = extractText(result);
   const lines = text.split('\n');
   const parsed: ObjectData = {};
+  let hasParsedField = false;
 
   for (const line of lines) {
     const dividerIndex = line.indexOf(':');
@@ -1178,42 +1188,62 @@ function parseObjectResult(result: ToolResult): ObjectData | null {
     }
 
     switch (rawKey) {
+      case 'Object ID': {
+        const numericId = Number(value);
+        parsed.objectID = Number.isFinite(numericId) ? numericId : value;
+        hasParsedField = true;
+        break;
+      }
       case 'Title':
         parsed.title = value;
+        hasParsedField = true;
         break;
       case 'Artist':
         parsed.artistDisplayName = value;
+        hasParsedField = true;
         break;
       case 'Artist Bio':
         parsed.artistDisplayBio = value;
+        hasParsedField = true;
         break;
       case 'Department':
         parsed.department = value;
+        hasParsedField = true;
+        break;
+      case 'Date':
+      case 'Object Date':
+        parsed.objectDate = value;
+        hasParsedField = true;
         break;
       case 'Credit Line':
         parsed.creditLine = value;
+        hasParsedField = true;
         break;
       case 'Medium':
         parsed.medium = value;
+        hasParsedField = true;
         break;
       case 'Dimensions':
         parsed.dimensions = value;
+        hasParsedField = true;
         break;
       case 'Primary Image URL':
         parsed.primaryImage = value;
+        hasParsedField = true;
         break;
       case 'Tags':
         parsed.tags = value
           .split(',')
           .map(term => ({ term: term.trim() }))
           .filter(tag => tag.term);
+        hasParsedField = true;
         break;
       default:
         break;
     }
   }
 
-  return parsed;
+  return hasParsedField ? parsed : null;
 }
 
 // ============================================================================
