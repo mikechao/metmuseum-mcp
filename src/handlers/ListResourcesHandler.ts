@@ -1,20 +1,20 @@
-import type { GetObjectTool } from '../tools/GetObjectTool.js';
+import type { OpenMetExplorerAppResource } from '../ui/OpenMetExplorerAppResource.js';
 
 export class ListResourcesHandler {
-  private getObjectTool: GetObjectTool;
+  private openMetExplorerAppResource: OpenMetExplorerAppResource;
 
-  constructor(getObjectTool: GetObjectTool) {
-    this.getObjectTool = getObjectTool;
+  constructor(openMetExplorerAppResource: OpenMetExplorerAppResource) {
+    this.openMetExplorerAppResource = openMetExplorerAppResource;
   }
 
   public async handleListResources() {
     return {
       resources: [
-        ...Array.from(this.getObjectTool.imageByTitle.keys()).map(title => ({
-          uri: `met-image://${title}`,
-          mimeType: 'image/png',
-          name: `${title}`,
-        })),
+        {
+          uri: this.openMetExplorerAppResource.uri,
+          mimeType: this.openMetExplorerAppResource.mimeType,
+          name: this.openMetExplorerAppResource.name,
+        },
       ],
     };
   }

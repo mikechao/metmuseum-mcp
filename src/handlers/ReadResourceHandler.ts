@@ -1,5 +1,4 @@
 import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
-import type { GetObjectTool } from '../tools/GetObjectTool.js';
 import type { OpenMetExplorerAppResource } from '../ui/OpenMetExplorerAppResource.js';
 
 const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
@@ -8,11 +7,9 @@ const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
 ];
 
 export class ReadResourceHandler {
-  private getObjectTool: GetObjectTool;
   private openMetExplorerAppResource: OpenMetExplorerAppResource;
 
-  constructor(getObjectTool: GetObjectTool, openMetExplorerAppResource: OpenMetExplorerAppResource) {
-    this.getObjectTool = getObjectTool;
+  constructor(openMetExplorerAppResource: OpenMetExplorerAppResource) {
     this.openMetExplorerAppResource = openMetExplorerAppResource;
   }
 
@@ -36,19 +33,6 @@ export class ReadResourceHandler {
       };
     }
 
-    if (uri.startsWith('met-image://')) {
-      const title = uri.split('://')[1];
-      const image = this.getObjectTool.imageByTitle.get(title);
-      if (image) {
-        return {
-          contents: [{
-            uri,
-            mimeType: 'image/jpeg',
-            blob: image,
-          }],
-        };
-      }
-    }
     return {
       content: [{ type: 'text', text: `Resource not found: ${uri}` }],
       isError: true,

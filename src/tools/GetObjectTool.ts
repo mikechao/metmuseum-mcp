@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import imageToBase64 from 'image-to-base64';
 import z from 'zod';
@@ -9,16 +8,12 @@ export class GetObjectTool {
   public readonly description: string = 'Get a museum object by its ID, from the Metropolitan Museum of Art Collection';
   public readonly inputSchema = z.object({
     objectId: z.number().describe('The ID of the museum object to retrieve'),
-    returnImage: z.boolean().optional().default(true).describe('Whether to return the image (if available) of the object and add it to the server resources'),
+    returnImage: z.boolean().optional().default(true).describe('Whether to return the image (if available) of the object'),
   }).describe('Get a museum object by its ID');
 
-  public readonly imageByTitle = new Map<string, string>();
-
-  private readonly server: McpServer;
   private readonly apiClient: MetMuseumApiClient;
 
-  constructor(server: McpServer, apiClient: MetMuseumApiClient) {
-    this.server = server;
+  constructor(apiClient: MetMuseumApiClient) {
     this.apiClient = apiClient;
   }
 
@@ -48,10 +43,6 @@ export class GetObjectTool {
           type: 'image' as const,
           data: imageBase64,
           mimeType: 'image/jpeg',
-        });
-        this.imageByTitle.set(data.title!, imageBase64);
-        this.server.server.notification({
-          method: 'notifications/resources/list_changed',
         });
       }
 

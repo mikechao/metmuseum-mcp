@@ -40,14 +40,13 @@ export class MetMuseumServer {
     this.metMuseumApiClient = new MetMuseumApiClient();
     this.listDepartments = new ListDepartmentsTool(this.metMuseumApiClient);
     this.search = new SearchMuseumObjectsTool(this.metMuseumApiClient);
-    this.getMuseumObject = new GetObjectTool(this.server, this.metMuseumApiClient);
+    this.getMuseumObject = new GetObjectTool(this.metMuseumApiClient);
     this.openMetExplorer = new OpenMetExplorerTool();
     this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
     this.listResourcesHandler = new ListResourcesHandler(
-      this.getMuseumObject,
+      this.openMetExplorerAppResource,
     );
     this.readResourceHandler = new ReadResourceHandler(
-      this.getMuseumObject,
       this.openMetExplorerAppResource,
     );
     this.setupErrorHandling();
