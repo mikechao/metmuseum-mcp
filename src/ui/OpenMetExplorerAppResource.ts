@@ -29,7 +29,6 @@ export interface OpenMetExplorerLaunchState {
   hasImages?: boolean;
   title?: boolean;
   departmentId?: number;
-  objectId?: number;
 }
 
 export class OpenMetExplorerAppResource {

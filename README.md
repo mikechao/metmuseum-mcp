@@ -52,6 +52,8 @@ Get a specific object from The Met containing all open access data about that ob
 
 If there is an image it is added to the Resource of the server via the title of the object.
 
+Use this tool for per-item details in a curated walkthrough once you already have an `objectId`.
+
 - Inputs:
   - `objectId` (number): The id of the object to retrieve
   - `returnImage` (boolean, optional, default: true): Whether to return the image (if available) of the object and add it to the server resources
@@ -76,12 +78,16 @@ If there is an image it is added to the Resource of the server via the title of 
 
 Launches an interactive MCP App (`ui://met/explorer.html`) that can search, filter, and inspect objects from within MCP clients that support Apps.
 
+Recommended flow:
+
+- Use `open-met-explorer` to launch and browse live search results (pass `q` to start searching immediately).
+- Once you have a curated list of `objectId` values, use `get-museum-object` for each item instead of relaunching the explorer for every artwork.
+
 - Inputs (all optional):
   - `q` (string): Initial search term.
   - `hasImages` (boolean, default: true): Prefer objects with images.
   - `title` (boolean, default: false): Search titles only.
   - `departmentId` (number): Pre-select a department filter.
-  - `objectId` (number): Open a specific object directly.
 
 ## Transports
 

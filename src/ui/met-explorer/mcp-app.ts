@@ -21,7 +21,6 @@ interface LaunchParams {
   hasImages?: boolean;
   title?: boolean;
   departmentId?: number;
-  objectId?: number;
 }
 
 interface AppState {
@@ -242,9 +241,6 @@ async function init(): Promise<void> {
       queryInput.value = state.launch.q;
       await runSearch();
     }
-    else if (state.launch.objectId) {
-      await loadObjectDetails(state.launch.objectId);
-    }
     else {
       setStatus('Ready. Enter a query and search the collection.', false);
     }
@@ -307,10 +303,6 @@ function applyLaunchState(rawState: unknown): void {
   if (typeof launch.departmentId === 'number') {
     state.launch.departmentId = launch.departmentId;
     departmentSelect.value = String(launch.departmentId);
-  }
-
-  if (typeof launch.objectId === 'number') {
-    state.launch.objectId = launch.objectId;
   }
 }
 
@@ -443,12 +435,6 @@ async function loadSearchPage(page: number): Promise<void> {
       false,
     );
     await syncSearchResultsToModelContext();
-
-    if (state.launch.objectId) {
-      const target = state.launch.objectId;
-      state.launch.objectId = undefined;
-      await loadObjectDetails(target);
-    }
   }
   catch (error) {
     if (token !== state.latestSearchToken) {
