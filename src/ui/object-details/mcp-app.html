@@ -63,10 +63,40 @@
 
       .image-wrap img {
         width: 100%;
-        max-height: 320px;
+        max-height: clamp(220px, 42vh, 360px);
         object-fit: contain;
         display: block;
         background: var(--placeholder);
+        transition: max-height 160ms ease;
+      }
+
+      .image-wrap img.expanded {
+        max-height: min(72vh, 760px);
+      }
+
+      .image-actions {
+        padding: 8px 10px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .image-toggle-btn {
+        width: auto;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .image-toggle-btn:hover {
+        border-color: var(--accent);
       }
 
       .body {
@@ -167,6 +197,11 @@
       <article class="card">
         <div id="image-wrap" class="image-wrap" hidden>
           <img id="object-image" alt="Artwork image" />
+          <div class="image-actions">
+            <button id="image-toggle-btn" class="image-toggle-btn" type="button" aria-expanded="false">
+              Expand image
+            </button>
+          </div>
         </div>
         <div class="body">
           <p class="kicker">Met Collection Object</p>
