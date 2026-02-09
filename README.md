@@ -170,6 +170,7 @@ mcpServers:
 Here some questions you can ask the AI model when this server in connected:
 
 ```
+Can you help me explore the Met?
 Can you show me a few painting from the Asian Art department?
 Can you find the painting titled "Corridor in the Asylum"?
 Can you find any art that has "cat" in the title or features "cats"?
