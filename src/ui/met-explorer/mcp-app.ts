@@ -442,6 +442,7 @@ async function loadSearchPage(page: number): Promise<void> {
         : baseMessage,
       false,
     );
+    await syncSearchResultsToModelContext();
 
     if (state.launch.objectId) {
       const target = state.launch.objectId;
@@ -829,6 +830,43 @@ function supportsTextModality(modalities: { text?: object } | undefined): boolea
   }
 
   return Object.keys(modalities).length === 0 || Boolean(modalities.text);
+}
+
+function buildSearchResultsContextText(): string | null {
+  if (!state.searchRequest || !state.results.length) {
+    return null;
+  }
+
+  const queryLine = `Query: "${state.searchRequest.q}"`;
+  const pageLine = `Page: ${state.currentPage}/${Math.max(state.totalPages, 1)} (${state.totalResults} total results)`;
+  const resultLines = state.results
+    .map(result => `- ${result.objectID} | ${result.title} | ${result.artistDisplayName}`)
+    .join('\n');
+
+  return [
+    'The user is looking at the following Met search results (verified title-to-object ID pairs):',
+    queryLine,
+    pageLine,
+    '',
+    resultLines,
+  ].join('\n');
+}
+
+async function syncSearchResultsToModelContext(): Promise<void> {
+  const text = buildSearchResultsContextText();
+  if (!text) {
+    return;
+  }
+
+  try {
+    await app.updateModelContext({
+      content: [{ type: 'text', text }],
+    });
+  }
+  catch (error) {
+    // Avoid interrupting browsing flow when context updates are unavailable.
+    console.warn('Failed to sync search results to model context:', error);
+  }
 }
 
 function parseObjectId(objectData: ObjectData): number | null {
