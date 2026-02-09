@@ -44,6 +44,7 @@
         margin: 0;
         padding: 0;
         width: 100%;
+        min-height: 100%;
         background: var(--surface);
         color: var(--text);
         font-family: var(--font-sans, 'Avenir Next', 'Segoe UI', sans-serif);
@@ -57,24 +58,29 @@
 
       .app {
         display: grid;
-        grid-template-rows: auto auto 1fr;
-        gap: 12px;
-        padding: 12px;
+        grid-template-rows: auto auto auto;
+        gap: 10px;
+        padding: 10px;
         width: 100%;
         min-width: 0;
+      }
+
+      [hidden] {
+        display: none !important;
       }
 
       .controls {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 10px;
-        padding: 10px;
+        padding: 9px;
       }
 
       .controls-grid {
         display: grid;
-        grid-template-columns: 1.5fr 1fr auto;
+        grid-template-columns: minmax(280px, 1.65fr) minmax(200px, 1fr) auto;
         gap: 8px;
+        align-items: end;
       }
 
       .search-submit-wrap {
@@ -85,11 +91,12 @@
 
       .flags {
         display: flex;
+        flex-wrap: wrap;
         gap: 14px;
         align-items: center;
-        margin-top: 8px;
+        margin-top: 7px;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
 
       label {
@@ -105,7 +112,7 @@
         width: 100%;
         border-radius: 8px;
         border: 1px solid var(--line);
-        min-height: 36px;
+        min-height: 34px;
         padding: 0 10px;
         font: inherit;
         color: inherit;
@@ -135,9 +142,9 @@
       }
 
       .status {
-        font-size: 13px;
+        font-size: 12px;
         color: var(--muted);
-        min-height: 18px;
+        min-height: 16px;
         padding: 0 2px;
       }
 
@@ -148,7 +155,7 @@
       .content {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
       }
 
       .panel {
@@ -172,10 +179,10 @@
       .results-list {
         position: relative;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
         gap: 10px;
-        padding: 10px;
-        overflow: auto;
+        padding: 8px;
+        overflow: visible;
         align-content: start;
       }
 
@@ -204,8 +211,9 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 10px;
+        padding: 8px 10px;
         border-top: 1px solid var(--line);
+        background: var(--panel);
       }
 
       .pagination button {
@@ -227,6 +235,11 @@
       }
 
       .result-card {
+        display: block;
+        width: 100%;
+        min-height: 0;
+        padding: 0;
+        text-align: left;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--card-bg);
@@ -245,7 +258,7 @@
 
       .result-card img {
         width: 100%;
-        height: 120px;
+        height: 150px;
         object-fit: cover;
         display: block;
         background: var(--image-placeholder);
@@ -253,32 +266,32 @@
 
       .result-card .meta {
         padding: 8px;
+        display: grid;
+        gap: 4px;
+        align-content: start;
       }
 
       .result-card .title {
         font-size: 13px;
-        line-height: 1.3;
+        line-height: 1.35;
         font-weight: 600;
-        min-height: 2.6em;
+        min-height: 2.7em;
         display: -webkit-box;
         line-clamp: 2;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        margin-bottom: 4px;
-      }
-
-      .result-card:hover .title,
-      .result-card:focus-visible .title {
-        display: block;
-        line-clamp: unset;
-        -webkit-line-clamp: unset;
       }
 
       .result-card .sub {
         font-size: 12px;
         color: var(--muted);
         line-height: 1.3;
+        display: -webkit-box;
+        line-clamp: 1;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
 
       .result-card.active {
@@ -310,17 +323,7 @@
 
       .detail-body {
         padding: 16px;
-        overflow: auto;
-        flex: 1;
-      }
-
-      .detail-body.zoomed {
-        padding: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: center;
-        gap: 10px;
+        overflow: visible;
       }
 
       .detail-image-wrap {
@@ -329,11 +332,16 @@
 
       .detail-image {
         width: 100%;
-        max-height: 220px;
+        max-height: clamp(220px, 42vh, 360px);
         object-fit: contain;
         border-radius: 8px;
         background: var(--image-placeholder);
         border: 1px solid var(--line);
+        transition: max-height 160ms ease;
+      }
+
+      .detail-image.expanded {
+        max-height: min(72vh, 760px);
       }
 
       .detail-image-actions {
@@ -356,84 +364,43 @@
         border-color: var(--accent);
       }
 
-      .detail-image-zoomed {
-        flex: 1;
-        max-height: calc(100vh - 120px);
-        min-height: 260px;
-      }
-
-      .zoom-back-btn {
-        width: auto;
-        min-height: 34px;
-        padding: 0 12px;
-        background: var(--input-bg);
-        color: var(--text);
-        border: 1px solid var(--line);
-        align-self: flex-start;
-      }
-
-      /* Modal Overlay */
-      .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        visibility: hidden;
-        transition:
-          opacity 0.3s ease,
-          visibility 0.3s ease;
-        z-index: 1000;
-        pointer-events: none;
-      }
-
-      .modal-overlay.open {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-      }
-
-      .modal-panel {
-        position: absolute;
-        inset: 0;
-        background: var(--panel);
-        border-radius: 0;
-        box-shadow: none;
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        z-index: 1001;
-      }
-
-      .modal-overlay.open .modal-panel {
-        transform: translateY(0);
-      }
-
-      .modal-header {
+      .detail-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 12px 16px;
         border-bottom: 1px solid var(--line);
-        flex-shrink: 0;
+        gap: 10px;
       }
 
-      .modal-header .panel-title {
+      .detail-header .panel-title {
         padding: 0;
         border: none;
       }
 
-      .modal-actions {
+      .detail-actions {
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
-      .modal-context-btn {
+      .detail-back-btn,
+      .detail-context-btn {
         width: auto;
         min-height: 32px;
         padding: 0 10px;
         border-radius: 8px;
+      }
+
+      .detail-back-btn {
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+        color: var(--text);
+      }
+
+      .detail-context-btn {
         border: 1px solid var(--accent);
         background: var(--accent);
         color: #fff;
@@ -441,36 +408,15 @@
         font-weight: 600;
       }
 
-      .modal-context-btn.added {
+      .detail-context-btn.added {
         background: var(--accent-soft);
         border-color: var(--line);
         color: var(--accent);
       }
 
-      .modal-context-btn.added:disabled {
+      .detail-context-btn.added:disabled {
         cursor: default;
         opacity: 1;
-      }
-
-      .modal-close {
-        width: 32px;
-        height: 32px;
-        min-height: 32px;
-        padding: 0;
-        border-radius: 50%;
-        background: var(--input-bg);
-        color: var(--text);
-        border: 1px solid var(--line);
-        font-size: 18px;
-        line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-      }
-
-      .modal-close:hover {
-        border-color: var(--accent);
       }
 
       .detail-title {
@@ -531,9 +477,68 @@
         }
       }
 
+      @media (max-width: 920px) {
+        .app {
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .controls-grid {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        }
+
+        .results-list {
+          grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .controls-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .search-query-wrap {
+          grid-column: 1 / -1;
+        }
+
+        .search-submit-wrap {
+          grid-column: 2;
+        }
+      }
+
       @media (max-width: 600px) {
         .controls-grid {
           grid-template-columns: 1fr;
+        }
+
+        .search-submit-wrap {
+          grid-column: auto;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .detail-body {
+          padding: 12px;
+        }
+
+        .detail-image {
+          max-height: 230px;
+        }
+
+        .detail-row {
+          grid-template-columns: minmax(86px, 108px) 1fr;
+          gap: 8px;
+        }
+
+        .detail-header {
+          padding: 10px 12px;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .detail-actions {
+          width: 100%;
+          justify-content: space-between;
         }
       }
     </style>
@@ -544,7 +549,7 @@
       <section class="controls">
         <form id="search-form">
           <div class="controls-grid">
-            <div>
+            <div class="search-query-wrap">
               <label for="query">Search Query</label>
               <input id="query" type="text" placeholder="sunflowers, dragons, armor..." />
             </div>
@@ -568,7 +573,7 @@
       <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <section class="content">
-        <article class="panel">
+        <article id="results-panel" class="panel">
           <div id="results-title" class="panel-title">Results</div>
           <div id="results" class="results-list">
             <div class="empty">Run a search to explore objects.</div>
@@ -579,23 +584,21 @@
             <button id="next-page" type="button">Next</button>
           </div>
         </article>
+
+        <article id="detail-panel" class="panel" hidden>
+          <div class="detail-header">
+            <div id="details-title" class="panel-title">Object Details</div>
+            <div class="detail-actions">
+              <button id="back-to-results-btn" class="detail-back-btn" type="button">Back to results</button>
+              <button id="add-context-btn" class="detail-context-btn" type="button" disabled>Add to context</button>
+            </div>
+          </div>
+          <div id="details" class="detail-body">
+            <div class="empty">Select an object to see details.</div>
+          </div>
+        </article>
       </section>
     </main>
-
-    <div id="modal-overlay" class="modal-overlay">
-      <article class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="details-title">
-        <div class="modal-header">
-          <div id="details-title" class="panel-title">Object Details</div>
-          <div class="modal-actions">
-            <button id="add-context-btn" class="modal-context-btn" type="button" disabled>Add to context</button>
-            <button id="modal-close" class="modal-close" type="button" aria-label="Close">&times;</button>
-          </div>
-        </div>
-        <div id="details" class="detail-body">
-          <div class="empty">Select an object to see details.</div>
-        </div>
-      </article>
-    </div>
 
     <script src="mcp-app.js"></script>
   </body>

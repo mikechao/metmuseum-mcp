@@ -31,7 +31,8 @@ interface AppState {
   selectedImageData: string | null;
   selectedImageMimeType: string | null;
   lastAddedContextObjectId: string | null;
-  isImageZoomed: boolean;
+  isImageExpanded: boolean;
+  viewMode: 'results' | 'detail';
   latestSearchToken: number;
   latestDetailsToken: number;
   searchRequest: SearchRequest | null;
@@ -115,7 +116,8 @@ const state: AppState = {
   selectedImageData: null,
   selectedImageMimeType: null,
   lastAddedContextObjectId: null,
-  isImageZoomed: false,
+  isImageExpanded: false,
+  viewMode: 'results',
   latestSearchToken: 0,
   latestDetailsToken: 0,
   searchRequest: null,
@@ -140,15 +142,16 @@ const titleOnlyInput = document.getElementById('title-only') as HTMLInputElement
 const searchButton = document.getElementById('search-btn') as HTMLButtonElement;
 const searchForm = document.getElementById('search-form') as HTMLFormElement;
 const statusEl = document.getElementById('status') as HTMLDivElement;
+const resultsPanelEl = document.getElementById('results-panel') as HTMLElement;
 const resultsTitleEl = document.getElementById('results-title') as HTMLDivElement;
 const resultsEl = document.getElementById('results') as HTMLDivElement;
 const resultsPaginationEl = document.getElementById('results-pagination') as HTMLDivElement;
 const prevPageButton = document.getElementById('prev-page') as HTMLButtonElement;
 const nextPageButton = document.getElementById('next-page') as HTMLButtonElement;
 const pageInfoEl = document.getElementById('page-info') as HTMLDivElement;
+const detailPanelEl = document.getElementById('detail-panel') as HTMLElement;
 const detailsEl = document.getElementById('details') as HTMLDivElement;
-const modalOverlay = document.getElementById('modal-overlay') as HTMLDivElement;
-const modalCloseBtn = document.getElementById('modal-close') as HTMLButtonElement;
+const backToResultsBtn = document.getElementById('back-to-results-btn') as HTMLButtonElement;
 const addContextBtn = document.getElementById('add-context-btn') as HTMLButtonElement;
 
 // ============================================================================
@@ -197,24 +200,27 @@ nextPageButton.addEventListener('click', () => {
   void goToPage(state.currentPage + 1);
 });
 
-modalCloseBtn.addEventListener('click', () => {
-  closeModal();
+backToResultsBtn.addEventListener('click', () => {
+  state.isImageExpanded = false;
+  setViewMode('results');
 });
 
 addContextBtn.addEventListener('click', () => {
   void addSelectedObjectToContext();
 });
 
-modalOverlay.addEventListener('click', (event: Event) => {
-  if (event.target === modalOverlay) {
-    closeModal();
-  }
-});
-
 document.addEventListener('keydown', (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && modalOverlay.classList.contains('open')) {
-    closeModal();
+  if (event.key !== 'Escape' || state.viewMode !== 'detail') {
+    return;
   }
+
+  if (state.isImageExpanded) {
+    state.isImageExpanded = false;
+    renderDetails();
+    return;
+  }
+
+  setViewMode('results');
 });
 
 // ============================================================================
@@ -226,6 +232,7 @@ async function init(): Promise<void> {
     await app.connect();
     applyContext(app.getHostContext());
     stopHeightSync = startHeightSync();
+    setViewMode('results');
     updateAddContextButton();
 
     await loadDepartments();
@@ -247,28 +254,10 @@ async function init(): Promise<void> {
   }
 }
 
-// ============================================================================
-// Modal Functions
-// ============================================================================
-
-function openModal(): void {
-  modalOverlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal(): void {
-  const hadSelection = state.selectedObject !== null;
-  modalOverlay.classList.remove('open');
-  document.body.style.overflow = '';
-
-  if (hadSelection) {
-    state.selectedObject = null;
-    state.selectedImageData = null;
-    state.selectedImageMimeType = null;
-    state.isImageZoomed = false;
-    renderResults();
-  }
-  updateAddContextButton();
+function setViewMode(mode: 'results' | 'detail'): void {
+  state.viewMode = mode;
+  resultsPanelEl.hidden = mode !== 'results';
+  detailPanelEl.hidden = mode !== 'detail';
 }
 
 // ============================================================================
@@ -368,7 +357,7 @@ async function runSearch(): Promise<void> {
   }
 
   state.searchRequest = args;
-  // Invalidate in-flight details requests so stale responses cannot re-open the modal.
+  // Invalidate in-flight details requests so stale responses cannot change selection.
   state.latestDetailsToken += 1;
   state.pageSize = DEFAULT_PAGE_SIZE;
   state.currentPage = 1;
@@ -377,7 +366,8 @@ async function runSearch(): Promise<void> {
   state.selectedObject = null;
   state.selectedImageData = null;
   state.selectedImageMimeType = null;
-  state.isImageZoomed = false;
+  state.isImageExpanded = false;
+  setViewMode('results');
   updateResultsTitle();
   renderDetails();
   updatePagination();
@@ -603,7 +593,7 @@ function renderResults(): void {
     else {
       const placeholder = document.createElement('div');
       placeholder.className = 'skeleton';
-      placeholder.style.height = '120px';
+      placeholder.style.height = '150px';
       card.append(placeholder);
     }
 
@@ -673,9 +663,10 @@ async function loadObjectDetails(objectId: number): Promise<void> {
     state.selectedObject = objectData;
     state.selectedImageData = imageBlock?.data ?? null;
     state.selectedImageMimeType = imageBlock?.mimeType ?? null;
-    state.isImageZoomed = false;
+    state.isImageExpanded = false;
 
     renderDetails();
+    setViewMode('detail');
     setStatus(`Loaded object ${objectId}.`, false);
   }
   finally {
@@ -686,14 +677,13 @@ async function loadObjectDetails(objectId: number): Promise<void> {
 
 function renderDetails(): void {
   detailsEl.innerHTML = '';
-  detailsEl.classList.remove('zoomed');
 
   if (!state.selectedObject) {
     const empty = document.createElement('div');
     empty.className = 'empty';
     empty.textContent = 'Select an object to see details.';
     detailsEl.append(empty);
-    closeModal();
+    updateAddContextButton();
     return;
   }
 
@@ -702,31 +692,27 @@ function renderDetails(): void {
   const objectData = state.selectedObject;
   const imageUrl = getSelectedImageUrl(objectData);
 
-  if (state.isImageZoomed) {
-    renderZoomedImage(imageUrl, objectData);
-    openModal();
-    return;
-  }
-
   if (imageUrl) {
     const imageWrap = document.createElement('div');
     imageWrap.className = 'detail-image-wrap';
 
     const image = document.createElement('img');
     image.className = 'detail-image';
+    image.classList.toggle('expanded', state.isImageExpanded);
     image.alt = stringOrFallback(objectData.title, 'Artwork image');
     image.src = imageUrl;
-
-    const zoomIntoImage = (): void => {
-      state.isImageZoomed = true;
-      renderDetails();
-    };
 
     const viewFullButton = document.createElement('button');
     viewFullButton.type = 'button';
     viewFullButton.className = 'image-view-btn';
-    viewFullButton.textContent = 'View full image';
-    viewFullButton.addEventListener('click', zoomIntoImage);
+    viewFullButton.textContent = state.isImageExpanded ? 'Collapse image' : 'Expand image';
+    viewFullButton.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
+    viewFullButton.addEventListener('click', () => {
+      state.isImageExpanded = !state.isImageExpanded;
+      image.classList.toggle('expanded', state.isImageExpanded);
+      viewFullButton.textContent = state.isImageExpanded ? 'Collapse image' : 'Expand image';
+      viewFullButton.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
+    });
 
     const imageActions = document.createElement('div');
     imageActions.className = 'detail-image-actions';
@@ -762,35 +748,6 @@ function renderDetails(): void {
   appendDetailRow(table, 'Tags', tagText);
 
   detailsEl.append(table);
-  openModal();
-}
-
-function renderZoomedImage(imageUrl: string | null, objectData: ObjectData): void {
-  detailsEl.classList.add('zoomed');
-
-  if (!imageUrl) {
-    const empty = document.createElement('div');
-    empty.className = 'empty';
-    empty.textContent = 'No image available for this object.';
-    detailsEl.append(empty);
-    return;
-  }
-
-  const image = document.createElement('img');
-  image.className = 'detail-image detail-image-zoomed';
-  image.alt = stringOrFallback(objectData.title, 'Artwork image');
-  image.src = imageUrl;
-
-  const backButton = document.createElement('button');
-  backButton.type = 'button';
-  backButton.className = 'zoom-back-btn';
-  backButton.textContent = 'Back to details';
-  backButton.addEventListener('click', () => {
-    state.isImageZoomed = false;
-    renderDetails();
-  });
-
-  detailsEl.append(image, backButton);
 }
 
 function getSelectedImageUrl(objectData: ObjectData): string | null {
