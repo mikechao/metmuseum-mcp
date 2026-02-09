@@ -75,6 +75,12 @@
         gap: 8px;
       }
 
+      .search-submit-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+
       .flags {
         display: flex;
         gap: 14px;
@@ -513,8 +519,7 @@
                 <option value="">All departments</option>
               </select>
             </div>
-            <div>
-              <label>&nbsp;</label>
+            <div class="search-submit-wrap">
               <button id="search-btn" type="submit">Search</button>
             </div>
           </div>
@@ -525,7 +530,7 @@
         </form>
       </section>
 
-      <div id="status" class="status"></div>
+      <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <section class="content">
         <article class="panel">
@@ -543,9 +548,9 @@
     </main>
 
     <div id="modal-overlay" class="modal-overlay">
-      <article class="modal-panel">
+      <article class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="details-title">
         <div class="modal-header">
-          <div class="panel-title">Object Details</div>
+          <div id="details-title" class="panel-title">Object Details</div>
           <div class="modal-actions">
             <button id="add-context-btn" class="modal-context-btn" type="button" disabled>Add to context</button>
             <button id="modal-close" class="modal-close" type="button" aria-label="Close">&times;</button>
