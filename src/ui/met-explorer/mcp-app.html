@@ -228,8 +228,12 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--card-bg);
-        cursor: pointer;
+        cursor: default;
         overflow: hidden;
+      }
+
+      .result-card:hover:enabled {
+        cursor: pointer;
       }
 
       .result-card:disabled {
