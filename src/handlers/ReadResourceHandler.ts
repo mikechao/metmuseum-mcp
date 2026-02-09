@@ -1,5 +1,10 @@
 import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
-import type { OpenMetExplorerAppResource } from '../ui/OpenMetExplorerAppResource.js';
+
+interface AppResource {
+  uri: string;
+  mimeType: string;
+  getHtml: () => Promise<string>;
+}
 
 const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
   'https://images.metmuseum.org',
@@ -7,20 +12,22 @@ const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
 ];
 
 export class ReadResourceHandler {
-  private openMetExplorerAppResource: OpenMetExplorerAppResource;
+  private readonly appResources: AppResource[];
 
-  constructor(openMetExplorerAppResource: OpenMetExplorerAppResource) {
-    this.openMetExplorerAppResource = openMetExplorerAppResource;
+  constructor(appResources: AppResource[]) {
+    this.appResources = appResources;
   }
 
   public async handleReadResource(request: ReadResourceRequest) {
     const uri = request.params.uri;
-    if (uri === this.openMetExplorerAppResource.uri) {
-      const html = await this.openMetExplorerAppResource.getHtml();
+    const resource = this.appResources.find(candidate => candidate.uri === uri);
+
+    if (resource) {
+      const html = await resource.getHtml();
       return {
         contents: [{
           uri,
-          mimeType: this.openMetExplorerAppResource.mimeType,
+          mimeType: resource.mimeType,
           text: html,
           _meta: {
             ui: {

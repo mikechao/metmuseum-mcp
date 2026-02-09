@@ -11,6 +11,7 @@ import { GetObjectTool } from './tools/GetObjectTool.js';
 import { ListDepartmentsTool } from './tools/ListDepartmentsTool.js';
 import { OpenMetExplorerTool } from './tools/OpenMetExplorerTool.js';
 import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
+import { GetMuseumObjectAppResource } from './ui/GetMuseumObjectAppResource.js';
 import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
 export class MetMuseumServer {
@@ -23,6 +24,7 @@ export class MetMuseumServer {
   private getMuseumObject: GetObjectTool;
   private openMetExplorer: OpenMetExplorerTool;
   private openMetExplorerAppResource: OpenMetExplorerAppResource;
+  private getMuseumObjectAppResource: GetMuseumObjectAppResource;
 
   constructor() {
     this.server = new McpServer(
@@ -43,11 +45,12 @@ export class MetMuseumServer {
     this.getMuseumObject = new GetObjectTool(this.metMuseumApiClient);
     this.openMetExplorer = new OpenMetExplorerTool();
     this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
+    this.getMuseumObjectAppResource = new GetMuseumObjectAppResource();
     this.listResourcesHandler = new ListResourcesHandler(
-      this.openMetExplorerAppResource,
+      [this.openMetExplorerAppResource, this.getMuseumObjectAppResource],
     );
     this.readResourceHandler = new ReadResourceHandler(
-      this.openMetExplorerAppResource,
+      [this.openMetExplorerAppResource, this.getMuseumObjectAppResource],
     );
     this.setupErrorHandling();
     this.setupTools();
@@ -71,11 +74,17 @@ export class MetMuseumServer {
       },
       this.search.execute.bind(this.search),
     );
-    this.server.registerTool(
+    registerAppTool(
+      this.server,
       this.getMuseumObject.name,
       {
         description: this.getMuseumObject.description,
-        inputSchema: this.getMuseumObject.inputSchema,
+        inputSchema: this.getMuseumObject.inputSchema.shape,
+        _meta: {
+          ui: {
+            resourceUri: this.getMuseumObjectAppResource.uri,
+          },
+        },
       },
       this.getMuseumObject.execute.bind(this.getMuseumObject),
     );
@@ -96,7 +105,7 @@ export class MetMuseumServer {
   }
 
   private setupRequestHandlers(): void {
-    // Note: Tool call handling is done automatically by registerTool() above.
+    // Note: Tool call handling is done automatically by registerTool/registerAppTool above.
     // We only need custom handlers for resources.
     this.server.server.setRequestHandler(
       ListResourcesRequestSchema,

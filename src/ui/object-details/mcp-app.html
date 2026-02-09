@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Met Object Details</title>
+    <style>
+      :root {
+        --surface: var(--color-background-primary, #f8f6f3);
+        --panel: var(--color-background-secondary, #ffffff);
+        --text: var(--color-text-primary, #1f1a17);
+        --muted: var(--color-text-secondary, #6c625c);
+        --line: var(--color-border-primary, #dfd5cd);
+        --accent: #9d1b2f;
+        --accent-soft: #f8e8ea;
+        --placeholder: #f1ece7;
+        --error: #b6242f;
+      }
+
+      [data-theme='dark'] {
+        --surface: var(--color-background-primary, #1a1a1a);
+        --panel: var(--color-background-secondary, #252525);
+        --text: var(--color-text-primary, #e8e4e0);
+        --muted: var(--color-text-secondary, #a39991);
+        --line: var(--color-border-primary, #3d3935);
+        --accent: #d4424f;
+        --accent-soft: #3d2224;
+        --placeholder: #333330;
+        --error: #f06b6b;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        width: 100%;
+        background: var(--surface);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .app {
+        padding: 10px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+
+      .image-wrap {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .image-wrap img {
+        width: 100%;
+        max-height: 320px;
+        object-fit: contain;
+        display: block;
+        background: var(--placeholder);
+      }
+
+      .body {
+        padding: 14px;
+      }
+
+      .kicker {
+        margin: 0 0 6px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .title {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .meta {
+        margin: 10px 0 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      .meta-row {
+        display: grid;
+        grid-template-columns: minmax(92px, 116px) 1fr;
+        align-items: start;
+        gap: 10px;
+      }
+
+      .meta-key {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .meta-value {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .object-link {
+        margin-top: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .object-link:hover {
+        text-decoration: underline;
+      }
+
+      .status {
+        margin-top: 8px;
+        min-height: 16px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--error);
+      }
+
+      .empty {
+        padding: 20px 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 600px) {
+        .app {
+          padding: 8px;
+        }
+
+        .body {
+          padding: 12px;
+        }
+
+        .meta-row {
+          grid-template-columns: minmax(84px, 102px) 1fr;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="app">
+      <article class="card">
+        <div id="image-wrap" class="image-wrap" hidden>
+          <img id="object-image" alt="Artwork image" />
+        </div>
+        <div class="body">
+          <p class="kicker">Met Collection Object</p>
+          <h1 id="title" class="title">Loading object details...</h1>
+          <dl id="meta" class="meta"></dl>
+          <a id="object-link" class="object-link" href="#" target="_blank" rel="noreferrer noopener" hidden>
+            Open on metmuseum.org
+          </a>
+        </div>
+        <div id="empty" class="empty" hidden>No object data is available for this result.</div>
+      </article>
+      <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></div>
+    </main>
+
+    <script src="mcp-app.js"></script>
+  </body>
+</html>

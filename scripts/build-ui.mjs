@@ -1,23 +1,29 @@
 /**
- * Build script for met-explorer MCP app
+ * Build script for MCP apps.
  *
- * Bundles the TypeScript and injects it into the HTML template.
+ * Bundles TypeScript and injects it into each HTML template.
  */
 
 import * as fs from 'node:fs';
 import process from 'node:process';
 import * as esbuild from 'esbuild';
 
-const SRC_DIR = 'src/ui/met-explorer';
-const DIST_DIR = 'dist/ui/met-explorer';
+const APP_CONFIGS = [
+  {
+    srcDir: 'src/ui/met-explorer',
+    distDir: 'dist/ui/met-explorer',
+  },
+  {
+    srcDir: 'src/ui/object-details',
+    distDir: 'dist/ui/object-details',
+  },
+];
 
-async function build() {
-  // Ensure output directory exists
-  fs.mkdirSync(DIST_DIR, { recursive: true });
+async function buildApp({ srcDir, distDir }) {
+  fs.mkdirSync(distDir, { recursive: true });
 
-  // Bundle the TypeScript to a string
   const result = await esbuild.build({
-    entryPoints: [`${SRC_DIR}/mcp-app.ts`],
+    entryPoints: [`${srcDir}/mcp-app.ts`],
     bundle: true,
     format: 'iife',
     write: false,
@@ -27,19 +33,22 @@ async function build() {
   const bundledCode = result.outputFiles[0].text;
   const safeBundledCode = bundledCode.replace(/<\/script/gi, '<\\/script');
 
-  // Read the HTML template
-  const htmlTemplate = fs.readFileSync(`${SRC_DIR}/mcp-app.html`, 'utf-8');
+  const htmlTemplate = fs.readFileSync(`${srcDir}/mcp-app.html`, 'utf-8');
 
-  // Replace the external script reference with inline script
   const finalHtml = htmlTemplate.replace(
     '<script src="mcp-app.js"></script>',
     () => `<script>\n${safeBundledCode}</script>`,
   );
 
-  // Write the output HTML
-  fs.writeFileSync(`${DIST_DIR}/mcp-app.html`, finalHtml);
+  fs.writeFileSync(`${distDir}/mcp-app.html`, finalHtml);
 
-  console.log(`✅ Built ${DIST_DIR}/mcp-app.html (${(finalHtml.length / 1024).toFixed(1)}kb)`);
+  console.log(`✅ Built ${distDir}/mcp-app.html (${(finalHtml.length / 1024).toFixed(1)}kb)`);
+}
+
+async function build() {
+  for (const appConfig of APP_CONFIGS) {
+    await buildApp(appConfig);
+  }
 }
 
 build().catch((err) => {

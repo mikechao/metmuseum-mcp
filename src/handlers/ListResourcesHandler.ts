@@ -1,21 +1,23 @@
-import type { OpenMetExplorerAppResource } from '../ui/OpenMetExplorerAppResource.js';
+interface AppResource {
+  uri: string;
+  mimeType: string;
+  name: string;
+}
 
 export class ListResourcesHandler {
-  private openMetExplorerAppResource: OpenMetExplorerAppResource;
+  private readonly appResources: AppResource[];
 
-  constructor(openMetExplorerAppResource: OpenMetExplorerAppResource) {
-    this.openMetExplorerAppResource = openMetExplorerAppResource;
+  constructor(appResources: AppResource[]) {
+    this.appResources = appResources;
   }
 
   public async handleListResources() {
     return {
-      resources: [
-        {
-          uri: this.openMetExplorerAppResource.uri,
-          mimeType: this.openMetExplorerAppResource.mimeType,
-          name: this.openMetExplorerAppResource.name,
-        },
-      ],
+      resources: this.appResources.map(resource => ({
+        uri: resource.uri,
+        mimeType: resource.mimeType,
+        name: resource.name,
+      })),
     };
   }
 }
