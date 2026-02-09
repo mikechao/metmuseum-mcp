@@ -15,7 +15,16 @@ export class OpenMetExplorerTool {
 
   public async execute(args: z.infer<typeof this.inputSchema>) {
     return {
-      content: [{ type: 'text' as const, text: 'Opening Met Explorer UI.' }],
+      content: [{
+        type: 'text' as const,
+        text: `Opening Met Explorer UI.
+
+Use this app to search, filter, paginate, and inspect Met objects.
+- Explore in the UI first (instead of many raw tool calls).
+- Ask the user to click "Add to context" when they want a selected object used in chat.
+- After context is added, use that object's details.
+- If image context is missing, call get-museum-object with {"objectId": <id>, "returnImage": true}.`,
+      }],
       structuredContent: {
         initialState: args,
       },
