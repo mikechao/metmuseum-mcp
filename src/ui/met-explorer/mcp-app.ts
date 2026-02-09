@@ -613,6 +613,8 @@ function renderResults(): void {
     const title = document.createElement('div');
     title.className = 'title';
     title.textContent = result.title;
+    title.title = result.title;
+    card.title = result.title;
 
     const sub = document.createElement('div');
     sub.className = 'sub';
@@ -715,17 +717,22 @@ function renderDetails(): void {
     image.alt = stringOrFallback(objectData.title, 'Artwork image');
     image.src = imageUrl;
 
-    const zoomButton = document.createElement('button');
-    zoomButton.type = 'button';
-    zoomButton.className = 'image-zoom-btn';
-    zoomButton.ariaLabel = 'View larger image';
-    zoomButton.textContent = '🔍';
-    zoomButton.addEventListener('click', () => {
+    const zoomIntoImage = (): void => {
       state.isImageZoomed = true;
       renderDetails();
-    });
+    };
 
-    imageWrap.append(image, zoomButton);
+    const viewFullButton = document.createElement('button');
+    viewFullButton.type = 'button';
+    viewFullButton.className = 'image-view-btn';
+    viewFullButton.textContent = 'View full image';
+    viewFullButton.addEventListener('click', zoomIntoImage);
+
+    const imageActions = document.createElement('div');
+    imageActions.className = 'detail-image-actions';
+    imageActions.append(viewFullButton);
+
+    imageWrap.append(image, imageActions);
     detailsEl.append(imageWrap);
   }
 
@@ -734,8 +741,8 @@ function renderDetails(): void {
   title.textContent = stringOrFallback(objectData.title, 'Untitled');
   detailsEl.append(title);
 
-  const table = document.createElement('div');
-  table.className = 'detail-table';
+  const table = document.createElement('dl');
+  table.className = 'detail-meta';
 
   appendDetailRow(table, 'Object ID', objectData.objectID);
   appendDetailRow(table, 'Artist', objectData.artistDisplayName);
@@ -1037,7 +1044,7 @@ async function addSelectedObjectToContext(): Promise<void> {
 }
 
 function appendDetailRow(
-  table: HTMLDivElement,
+  table: HTMLDListElement,
   key: string,
   value: string | number | undefined,
 ): void {
@@ -1045,14 +1052,19 @@ function appendDetailRow(
     return;
   }
 
-  const keyEl = document.createElement('div');
+  const row = document.createElement('div');
+  row.className = 'detail-row';
+
+  const keyEl = document.createElement('dt');
   keyEl.className = 'detail-key';
   keyEl.textContent = key;
 
-  const valueEl = document.createElement('div');
+  const valueEl = document.createElement('dd');
+  valueEl.className = 'detail-value';
   valueEl.textContent = String(value);
 
-  table.append(keyEl, valueEl);
+  row.append(keyEl, valueEl);
+  table.append(row);
 }
 
 // ============================================================================
