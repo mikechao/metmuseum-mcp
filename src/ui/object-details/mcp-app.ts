@@ -51,7 +51,9 @@ const objectLinkEl = document.getElementById('object-link') as HTMLAnchorElement
 const statusEl = document.getElementById('status') as HTMLDivElement;
 const emptyEl = document.getElementById('empty') as HTMLDivElement;
 
-const app = new App({ name: 'met-object-details-app', version: '0.1.0' });
+// Hosts handle width differently; sync height only to avoid narrow-width lock-in.
+const app = new App({ name: 'met-object-details-app', version: '0.1.0' }, {}, { autoResize: false });
+let stopHeightSync: (() => void) | null = null;
 
 app.onhostcontextchanged = (contextUpdate) => {
   applyContext(contextUpdate);
@@ -66,6 +68,10 @@ app.ontoolresult = (result: ToolResult) => {
 };
 
 app.onteardown = async () => {
+  if (stopHeightSync) {
+    stopHeightSync();
+    stopHeightSync = null;
+  }
   return {};
 };
 
@@ -89,6 +95,7 @@ async function init(): Promise<void> {
   try {
     await app.connect();
     applyContext(app.getHostContext());
+    stopHeightSync = startHeightSync();
     render();
     setStatus('Waiting for object details...', false);
   }
@@ -442,6 +449,47 @@ function errorToMessage(error: unknown): string {
     return error.message;
   }
   return String(error);
+}
+
+function startHeightSync(): (() => void) | null {
+  if (typeof ResizeObserver === 'undefined') {
+    return null;
+  }
+
+  let raf = 0;
+  let lastHeight = 0;
+
+  const reportHeight = (): void => {
+    raf = 0;
+    const nextHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (!nextHeight || nextHeight === lastHeight) {
+      return;
+    }
+    lastHeight = nextHeight;
+    app.sendSizeChanged({ height: nextHeight });
+  };
+
+  const scheduleReport = (): void => {
+    if (raf) {
+      return;
+    }
+    raf = requestAnimationFrame(reportHeight);
+  };
+
+  const observer = new ResizeObserver(scheduleReport);
+  observer.observe(document.documentElement);
+  observer.observe(document.body);
+  window.addEventListener('load', scheduleReport);
+  scheduleReport();
+
+  return () => {
+    observer.disconnect();
+    if (raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    window.removeEventListener('load', scheduleReport);
+  };
 }
 
 init().catch((error: unknown) => {
