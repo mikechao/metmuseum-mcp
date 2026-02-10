@@ -830,11 +830,12 @@ function buildSearchResultsContextText(): string | null {
     .join('\n');
 
   return [
-    'The user is looking at the following Met search results (verified title-to-object ID pairs):',
-    'For follow-up curation or walkthrough requests, use this list as the default source unless the user asks to broaden scope.',
-    'Start with guidance from this snapshot without extra tool calls.',
+    'IMPORTANT: These are the active search results the user is currently viewing in the Met Explorer app.',
+    'When the user refers to "these results," "the results," or asks for curation, summaries, or must-see lists, use ONLY this data.',
+    'Do NOT call search-museum-objects — these results are already available.',
     'Call get-museum-object only when the user asks for deeper detail on a specific item.',
-    'Do not invent object IDs or titles that are not in this page snapshot.',
+    'Do not invent object IDs or titles that are not in this list.',
+    '',
     queryLine,
     pageLine,
     '',

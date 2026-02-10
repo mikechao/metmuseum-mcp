@@ -21,18 +21,12 @@ export class OpenMetExplorerTool {
         type: 'text' as const,
         text: `Opening Met Explorer UI.
 
-Use this app to search, filter, paginate, and inspect Met objects.
-- For exploration requests, pass q in this tool call so search runs automatically when the app opens.
-- While the app is open, prefer guiding the user using app results.
-- Treat titles and object IDs shown in the app as source of truth for follow-up navigation.
-- Do not relaunch this tool for every individual artwork in a curated list.
-- For follow-up curation or walkthrough requests, default to the current app results unless the user asks to broaden scope.
-- Start with a concise tour from the current results snapshot without extra tool calls.
-- Call get-museum-object only when the user asks to go deeper on a specific item, asks for the next item with full details, or requests image-level detail.
-- Use search-museum-objects as a fallback when app interaction is unavailable or the user asks for raw ID lists.
-- Explore in the UI first (instead of many raw tool calls).
+The explorer app automatically provides its search results in your context. When the user says "these results," "the results," "what I see," or asks for curation/summaries, they mean the explorer's results already in your context.
+- Do NOT call search-museum-objects while the explorer app is open. The app's results are your data source.
+- Use the explorer's context data directly for curation, summaries, must-see lists, and walkthrough requests.
+- Treat titles and object IDs from the explorer as source of truth. Do not invent IDs or titles.
+- Call get-museum-object only when the user asks to go deeper on a specific item or requests image-level detail.
 - Ask the user to click "Add to context" when they want a selected object used in chat.
-- After context is added, use that object's details.
 - If image context is missing, call get-museum-object with {"objectId": <id>, "returnImage": true}.`,
       }],
       structuredContent: {

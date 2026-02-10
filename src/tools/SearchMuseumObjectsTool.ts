@@ -25,11 +25,12 @@ export class SearchMuseumObjectsTool {
   // Define public tool properties
   public readonly name: string = 'search-museum-objects';
   public readonly description: string = 'Search for objects in the Metropolitan Museum of Art (Met Museum). Will return Total objects found, '
-    + 'followed by a paginated list of Object Ids.'
-    + 'The parameter title should be set to true if you want to search for objects by title.'
-    + 'The parameter hasImages is false by default, but can be set to true to return only objects with images.'
+    + 'followed by a paginated list of Object Ids. '
+    + 'If the Met Explorer app (open-met-explorer) is already open and displaying results, do not call this tool — use the explorer\'s results from context instead. '
+    + 'The parameter title should be set to true if you want to search for objects by title. '
+    + 'The parameter hasImages is false by default, but can be set to true to return only objects with images. '
     + 'Additional optional filters are available for highlights, tags, on-view status, artist/culture match, medium, '
-    + 'geographic location, and date range.'
+    + 'geographic location, and date range. '
     + 'Use page and pageSize to paginate results.';
 
   // Define the input schema
