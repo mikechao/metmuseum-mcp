@@ -43,6 +43,10 @@ interface AppState {
   isResultsLoading: boolean;
   isDetailsLoading: boolean;
   isAddingToContext: boolean;
+  isInitialized: boolean;
+  departmentsLoaded: boolean;
+  pendingLaunchSearchSignature: string | null;
+  lastLaunchSearchSignature: string | null;
 }
 
 interface SearchRequest {
@@ -128,6 +132,10 @@ const state: AppState = {
   isResultsLoading: false,
   isDetailsLoading: false,
   isAddingToContext: false,
+  isInitialized: false,
+  departmentsLoaded: false,
+  pendingLaunchSearchSignature: null,
+  lastLaunchSearchSignature: null,
 };
 
 // ============================================================================
@@ -235,13 +243,11 @@ async function init(): Promise<void> {
     updateAddContextButton();
 
     await loadDepartments();
+    state.departmentsLoaded = true;
+    state.isInitialized = true;
     updatePagination();
-
-    if (state.launch.q) {
-      queryInput.value = state.launch.q;
-      await runSearch();
-    }
-    else {
+    await maybeRunPendingLaunchSearch();
+    if (!state.searchRequest) {
       setStatus('Ready. Enter a query and search the collection.', false);
     }
   }
@@ -304,6 +310,9 @@ function applyLaunchState(rawState: unknown): void {
     state.launch.departmentId = launch.departmentId;
     departmentSelect.value = String(launch.departmentId);
   }
+
+  state.pendingLaunchSearchSignature = getLaunchSearchSignature();
+  void maybeRunPendingLaunchSearch();
 }
 
 // ============================================================================
@@ -447,8 +456,52 @@ async function loadSearchPage(page: number): Promise<void> {
   finally {
     if (token === state.latestSearchToken) {
       setBusy(false);
+      void maybeRunPendingLaunchSearch();
     }
   }
+}
+
+async function maybeRunPendingLaunchSearch(): Promise<void> {
+  if (!state.isInitialized || !state.departmentsLoaded) {
+    return;
+  }
+  if (!state.pendingLaunchSearchSignature) {
+    return;
+  }
+  if (state.pendingLaunchSearchSignature === state.lastLaunchSearchSignature) {
+    state.pendingLaunchSearchSignature = null;
+    return;
+  }
+  if (state.isBusy || state.isResultsLoading) {
+    return;
+  }
+
+  const signature = state.pendingLaunchSearchSignature;
+  state.pendingLaunchSearchSignature = null;
+  state.lastLaunchSearchSignature = signature;
+  await runSearch();
+}
+
+function getLaunchSearchSignature(): string | null {
+  const q = state.launch.q?.trim();
+  if (!q) {
+    return null;
+  }
+
+  const hasImages
+    = typeof state.launch.hasImages === 'boolean'
+      ? state.launch.hasImages
+      : hasImagesInput.checked;
+  const title
+    = typeof state.launch.title === 'boolean'
+      ? state.launch.title
+      : titleOnlyInput.checked;
+  const departmentId
+    = typeof state.launch.departmentId === 'number'
+      ? state.launch.departmentId
+      : null;
+
+  return [q, hasImages ? '1' : '0', title ? '1' : '0', departmentId ?? ''].join('|');
 }
 
 // ============================================================================
