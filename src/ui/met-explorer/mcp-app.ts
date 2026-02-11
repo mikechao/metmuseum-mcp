@@ -290,26 +290,26 @@ function applyLaunchState(rawState: unknown): void {
   }
 
   const launch = rawState as Record<string, unknown>;
+  const normalizedLaunch: LaunchParams = {
+    hasImages: typeof launch.hasImages === 'boolean' ? launch.hasImages : true,
+    title: typeof launch.title === 'boolean' ? launch.title : false,
+  };
 
   if (typeof launch.q === 'string') {
-    state.launch.q = launch.q;
-    queryInput.value = launch.q;
-  }
-
-  if (typeof launch.hasImages === 'boolean') {
-    state.launch.hasImages = launch.hasImages;
-    hasImagesInput.checked = launch.hasImages;
-  }
-
-  if (typeof launch.title === 'boolean') {
-    state.launch.title = launch.title;
-    titleOnlyInput.checked = launch.title;
+    normalizedLaunch.q = launch.q;
   }
 
   if (typeof launch.departmentId === 'number') {
-    state.launch.departmentId = launch.departmentId;
-    departmentSelect.value = String(launch.departmentId);
+    normalizedLaunch.departmentId = launch.departmentId;
   }
+
+  state.launch = normalizedLaunch;
+  queryInput.value = normalizedLaunch.q ?? '';
+  hasImagesInput.checked = normalizedLaunch.hasImages ?? true;
+  titleOnlyInput.checked = normalizedLaunch.title ?? false;
+  departmentSelect.value = normalizedLaunch.departmentId === undefined
+    ? ''
+    : String(normalizedLaunch.departmentId);
 
   state.pendingLaunchSearchSignature = getLaunchSearchSignature();
   void maybeRunPendingLaunchSearch();
@@ -488,14 +488,8 @@ function getLaunchSearchSignature(): string | null {
     return null;
   }
 
-  const hasImages
-    = typeof state.launch.hasImages === 'boolean'
-      ? state.launch.hasImages
-      : hasImagesInput.checked;
-  const title
-    = typeof state.launch.title === 'boolean'
-      ? state.launch.title
-      : titleOnlyInput.checked;
+  const hasImages = Boolean(state.launch.hasImages);
+  const title = Boolean(state.launch.title);
   const departmentId
     = typeof state.launch.departmentId === 'number'
       ? state.launch.departmentId
@@ -883,9 +877,8 @@ function buildSearchResultsContextText(): string | null {
     .join('\n');
 
   return [
-    'IMPORTANT: These are the active search results the user is currently viewing in the Met Explorer app.',
-    'When the user refers to "these results," "the results," or asks for curation, summaries, or must-see lists, use ONLY this data.',
-    'Do NOT call search-museum-objects — these results are already available.',
+    'These are the search results currently displayed in the Met Explorer app (verified title-to-object ID pairs).',
+    'When the user refers to "these results," "the results," or asks for curation, summaries, or must-see lists, use this data directly without calling search-museum-objects.',
     'Call get-museum-object only when the user asks for deeper detail on a specific item.',
     'Do not invent object IDs or titles that are not in this list.',
     '',
