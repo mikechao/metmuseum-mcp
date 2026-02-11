@@ -1,6 +1,6 @@
+import type { ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
-import type { HostContext, ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
-import { applyContext, errorToMessage, extractText, getImageContent, isImageContentBlock, isTextContentBlock, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
+import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 
 /**
  * Met Explorer MCP App - TypeScript Entry Point
@@ -61,8 +61,6 @@ interface ResultCard {
   primaryImageSmall: string;
 }
 
-
-
 interface Department {
   departmentId: number;
   displayName: string;
@@ -80,8 +78,6 @@ interface HydrationResult {
   cards: ResultCard[];
   failedCount: number;
 }
-
-
 
 // ============================================================================
 // Constants
@@ -246,8 +242,6 @@ function setViewMode(mode: 'results' | 'detail'): void {
 // ============================================================================
 // Context & Launch State
 // ============================================================================
-
-
 
 function applyLaunchState(rawState: unknown): void {
   if (!rawState || typeof rawState !== 'object') {
@@ -740,9 +734,9 @@ function renderDetails(): void {
 
   const tagText = Array.isArray(objectData.tags)
     ? objectData.tags
-      .map(tag => tag?.term)
-      .filter(Boolean)
-      .join(', ')
+        .map(tag => tag?.term)
+        .filter(Boolean)
+        .join(', ')
     : '';
   appendDetailRow(table, 'Tags', tagText);
 
@@ -811,8 +805,8 @@ function buildObjectContextText(objectData: ObjectData): string {
 
   const tags = Array.isArray(objectData.tags)
     ? objectData.tags
-      .map(tag => tag?.term)
-      .filter((term): term is string => typeof term === 'string' && term.length > 0)
+        .map(tag => tag?.term)
+        .filter((term): term is string => typeof term === 'string' && term.length > 0)
     : [];
 
   if (tags.length) {
@@ -949,10 +943,10 @@ async function addSelectedObjectToContext(): Promise<void> {
       content,
       structuredContent: canSendStructuredContent
         ? {
-          source: 'met-explorer-app',
-          object: objectData,
-          hasEmbeddedImage: canSendImagePayload,
-        }
+            source: 'met-explorer-app',
+            object: objectData,
+            hasEmbeddedImage: canSendImagePayload,
+          }
         : undefined,
     });
 
@@ -1119,8 +1113,8 @@ function parseSearchResult(
           : 0;
     const hasServerPagination
       = typeof structured.page === 'number'
-      && typeof structured.pageSize === 'number'
-      && typeof structured.totalPages === 'number';
+        && typeof structured.pageSize === 'number'
+        && typeof structured.totalPages === 'number';
     const start = (page - 1) * pageSize;
     const objectIDs = hasServerPagination
       ? (structured.objectIDs as number[])
@@ -1145,11 +1139,11 @@ function parseSearchResult(
   const idsMatch = text.match(/Object IDs:\s*([\d,\s]+)/);
   const ids = idsMatch
     ? idsMatch[1]
-      .split(',')
-      .map(id => id.trim())
-      .filter(Boolean)
-      .map(id => Number(id))
-      .filter(id => Number.isFinite(id))
+        .split(',')
+        .map(id => id.trim())
+        .filter(Boolean)
+        .map(id => Number(id))
+        .filter(id => Number.isFinite(id))
     : [];
   const total = totalMatch ? Number(totalMatch[1]) : ids.length;
   const page = pageMatch ? Number(pageMatch[1]) : requestedPage;
@@ -1169,8 +1163,6 @@ function parseSearchResult(
     objectIDs,
   };
 }
-
-
 
 // ============================================================================
 // Utility Functions
@@ -1214,8 +1206,6 @@ function setStatus(message: string, isError: boolean): void {
   statusEl.className = isError ? 'status error' : 'status';
 }
 
-
-
 function objectIdEquals(
   left: number | string | undefined,
   right: number | string | undefined,
@@ -1225,8 +1215,6 @@ function objectIdEquals(
   }
   return String(left) === String(right);
 }
-
-
 
 // ============================================================================
 // Start Application

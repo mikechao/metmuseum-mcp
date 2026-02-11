@@ -1,5 +1,5 @@
+import type { ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
-import type { HostContext, ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
 import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 
 interface AppState {
