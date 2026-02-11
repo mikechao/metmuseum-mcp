@@ -2,14 +2,22 @@ class RateLimiter {
   private requestsThisSecond: number = 0;
   private lastRequestTime: number = Date.now();
   private maxRequestsPerSecond: number;
+  private pending: Promise<void> = Promise.resolve();
 
   constructor(maxRequestsPerSecond: number) {
     this.maxRequestsPerSecond = maxRequestsPerSecond;
   }
 
   async fetch(url: string, options?: RequestInit): Promise<Response> {
-    await this.waitIfNeeded();
+    await this.acquireSlot();
     return fetch(url, options);
+  }
+
+  private acquireSlot(): Promise<void> {
+    // Chain each caller onto the previous one so the counter
+    // check-and-increment is serialized across async boundaries.
+    this.pending = this.pending.then(() => this.waitIfNeeded());
+    return this.pending;
   }
 
   private async waitIfNeeded(): Promise<void> {
@@ -40,3 +48,4 @@ class RateLimiter {
 
 // Create and export a singleton instance for Met Museum API
 export const metMuseumRateLimiter = new RateLimiter(80);
+
