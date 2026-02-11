@@ -1,10 +1,5 @@
 import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
-
-interface AppResource {
-  uri: string;
-  mimeType: string;
-  getHtml: () => Promise<string>;
-}
+import type { AppResource } from '../types/types.js';
 
 const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
   'https://images.metmuseum.org',

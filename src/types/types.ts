@@ -1,5 +1,12 @@
 import z from 'zod';
 
+export interface AppResource {
+  uri: string;
+  mimeType: string;
+  name: string;
+  getHtml: () => Promise<string>;
+}
+
 /**
  * https://metmuseum.github.io/#departments
  */

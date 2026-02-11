@@ -1,8 +1,4 @@
-interface AppResource {
-  uri: string;
-  mimeType: string;
-  name: string;
-}
+import type { AppResource } from '../types/types.js';
 
 export class ListResourcesHandler {
   private readonly appResources: AppResource[];
