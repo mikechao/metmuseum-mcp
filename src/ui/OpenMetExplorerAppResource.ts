@@ -6,13 +6,6 @@ const uiBaseDir = path.dirname(fileURLToPath(import.meta.url));
 const uiHtmlPath = path.join(uiBaseDir, 'met-explorer', 'mcp-app.html');
 const distUiHtmlPath = path.join(uiBaseDir, '..', '..', 'dist', 'ui', 'met-explorer', 'mcp-app.html');
 
-export interface OpenMetExplorerLaunchState {
-  q?: string;
-  hasImages?: boolean;
-  title?: boolean;
-  departmentId?: number;
-}
-
 export class OpenMetExplorerAppResource {
   public readonly name: string = 'Met Explorer';
   public readonly uri: string = 'ui://met/explorer.html';
