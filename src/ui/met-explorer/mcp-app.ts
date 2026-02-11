@@ -1,9 +1,6 @@
-import {
-  App,
-  applyDocumentTheme,
-  applyHostFonts,
-  applyHostStyleVariables,
-} from '@modelcontextprotocol/ext-apps';
+import { App } from '@modelcontextprotocol/ext-apps';
+import type { HostContext, ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
+import { applyContext, errorToMessage, extractText, getImageContent, isImageContentBlock, isTextContentBlock, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 
 /**
  * Met Explorer MCP App - TypeScript Entry Point
@@ -64,20 +61,7 @@ interface ResultCard {
   primaryImageSmall: string;
 }
 
-interface ObjectData {
-  objectID?: number | string;
-  title?: string;
-  artistDisplayName?: string;
-  artistDisplayBio?: string;
-  department?: string;
-  objectDate?: string;
-  medium?: string;
-  dimensions?: string;
-  creditLine?: string;
-  primaryImage?: string;
-  primaryImageSmall?: string;
-  tags?: Array<{ term?: string }>;
-}
+
 
 interface Department {
   departmentId: number;
@@ -97,10 +81,7 @@ interface HydrationResult {
   failedCount: number;
 }
 
-type ToolInputParams = Parameters<NonNullable<App['ontoolinput']>>[0];
-type ToolResult = Awaited<ReturnType<App['callServerTool']>>;
-type ToolContentBlock = NonNullable<ToolResult['content']>[number];
-type HostContext = ReturnType<App['getHostContext']>;
+
 
 // ============================================================================
 // Constants
@@ -238,7 +219,7 @@ async function init(): Promise<void> {
   try {
     await app.connect();
     applyContext(app.getHostContext());
-    stopHeightSync = startHeightSync();
+    stopHeightSync = startHeightSync(s => app.sendSizeChanged(s));
     setViewMode('results');
     updateAddContextButton();
 
@@ -266,23 +247,7 @@ function setViewMode(mode: 'results' | 'detail'): void {
 // Context & Launch State
 // ============================================================================
 
-function applyContext(context: HostContext): void {
-  if (!context) {
-    return;
-  }
 
-  if (context.theme) {
-    applyDocumentTheme(context.theme);
-  }
-
-  if (context.styles?.variables) {
-    applyHostStyleVariables(context.styles.variables);
-  }
-
-  if (context.styles?.css?.fonts) {
-    applyHostFonts(context.styles.css.fonts);
-  }
-}
 
 function applyLaunchState(rawState: unknown): void {
   if (!rawState || typeof rawState !== 'object') {
@@ -775,9 +740,9 @@ function renderDetails(): void {
 
   const tagText = Array.isArray(objectData.tags)
     ? objectData.tags
-        .map(tag => tag?.term)
-        .filter(Boolean)
-        .join(', ')
+      .map(tag => tag?.term)
+      .filter(Boolean)
+      .join(', ')
     : '';
   appendDetailRow(table, 'Tags', tagText);
 
@@ -846,8 +811,8 @@ function buildObjectContextText(objectData: ObjectData): string {
 
   const tags = Array.isArray(objectData.tags)
     ? objectData.tags
-        .map(tag => tag?.term)
-        .filter((term): term is string => typeof term === 'string' && term.length > 0)
+      .map(tag => tag?.term)
+      .filter((term): term is string => typeof term === 'string' && term.length > 0)
     : [];
 
   if (tags.length) {
@@ -984,10 +949,10 @@ async function addSelectedObjectToContext(): Promise<void> {
       content,
       structuredContent: canSendStructuredContent
         ? {
-            source: 'met-explorer-app',
-            object: objectData,
-            hasEmbeddedImage: canSendImagePayload,
-          }
+          source: 'met-explorer-app',
+          object: objectData,
+          hasEmbeddedImage: canSendImagePayload,
+        }
         : undefined,
     });
 
@@ -1154,8 +1119,8 @@ function parseSearchResult(
           : 0;
     const hasServerPagination
       = typeof structured.page === 'number'
-        && typeof structured.pageSize === 'number'
-        && typeof structured.totalPages === 'number';
+      && typeof structured.pageSize === 'number'
+      && typeof structured.totalPages === 'number';
     const start = (page - 1) * pageSize;
     const objectIDs = hasServerPagination
       ? (structured.objectIDs as number[])
@@ -1180,11 +1145,11 @@ function parseSearchResult(
   const idsMatch = text.match(/Object IDs:\s*([\d,\s]+)/);
   const ids = idsMatch
     ? idsMatch[1]
-        .split(',')
-        .map(id => id.trim())
-        .filter(Boolean)
-        .map(id => Number(id))
-        .filter(id => Number.isFinite(id))
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean)
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id))
     : [];
   const total = totalMatch ? Number(totalMatch[1]) : ids.length;
   const page = pageMatch ? Number(pageMatch[1]) : requestedPage;
@@ -1205,114 +1170,11 @@ function parseSearchResult(
   };
 }
 
-function parseObjectResult(result: ToolResult): ObjectData | null {
-  const structured = getStructuredValue(result);
-  if (structured?.object && typeof structured.object === 'object') {
-    return structured.object as ObjectData;
-  }
 
-  const text = extractText(result);
-  const lines = text.split('\n');
-  const parsed: ObjectData = {};
-  let hasParsedField = false;
-
-  for (const line of lines) {
-    const dividerIndex = line.indexOf(':');
-    if (dividerIndex <= 0) {
-      continue;
-    }
-
-    const rawKey = line.slice(0, dividerIndex).trim();
-    const value = line.slice(dividerIndex + 1).trim();
-    if (!value) {
-      continue;
-    }
-
-    switch (rawKey) {
-      case 'Object ID': {
-        const numericId = Number(value);
-        parsed.objectID = Number.isFinite(numericId) ? numericId : value;
-        hasParsedField = true;
-        break;
-      }
-      case 'Title':
-        parsed.title = value;
-        hasParsedField = true;
-        break;
-      case 'Artist':
-        parsed.artistDisplayName = value;
-        hasParsedField = true;
-        break;
-      case 'Artist Bio':
-        parsed.artistDisplayBio = value;
-        hasParsedField = true;
-        break;
-      case 'Department':
-        parsed.department = value;
-        hasParsedField = true;
-        break;
-      case 'Date':
-      case 'Object Date':
-        parsed.objectDate = value;
-        hasParsedField = true;
-        break;
-      case 'Credit Line':
-        parsed.creditLine = value;
-        hasParsedField = true;
-        break;
-      case 'Medium':
-        parsed.medium = value;
-        hasParsedField = true;
-        break;
-      case 'Dimensions':
-        parsed.dimensions = value;
-        hasParsedField = true;
-        break;
-      case 'Primary Image URL':
-        parsed.primaryImage = value;
-        hasParsedField = true;
-        break;
-      case 'Tags':
-        parsed.tags = value
-          .split(',')
-          .map(term => ({ term: term.trim() }))
-          .filter(tag => tag.term);
-        hasParsedField = true;
-        break;
-      default:
-        break;
-    }
-  }
-
-  return hasParsedField ? parsed : null;
-}
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
-
-function extractText(result: ToolResult): string {
-  if (!Array.isArray(result?.content)) {
-    return '';
-  }
-
-  return result.content
-    .filter(isTextContentBlock)
-    .map(block => block.text)
-    .join('\n')
-    .trim();
-}
-
-function getImageContent(
-  result: ToolResult,
-): Extract<ToolContentBlock, { type: 'image' }> | null {
-  if (!Array.isArray(result?.content)) {
-    return null;
-  }
-
-  const block = result.content.find(isImageContentBlock);
-  return block ?? null;
-}
 
 function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
   const value = result?.structuredContent;
@@ -1320,16 +1182,6 @@ function getStructuredValue(result: ToolResult): Record<string, unknown> | null 
     return value;
   }
   return null;
-}
-
-function isTextContentBlock(block: ToolContentBlock): block is Extract<ToolContentBlock, { type: 'text' }> {
-  return block.type === 'text';
-}
-
-function isImageContentBlock(
-  block: ToolContentBlock,
-): block is Extract<ToolContentBlock, { type: 'image' }> {
-  return block.type === 'image';
 }
 
 function setBusy(isBusy: boolean): void {
@@ -1362,19 +1214,7 @@ function setStatus(message: string, isError: boolean): void {
   statusEl.className = isError ? 'status error' : 'status';
 }
 
-function errorToMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
-}
 
-function stringOrFallback(value: string | undefined, fallback: string): string {
-  if (typeof value === 'string' && value.trim()) {
-    return value;
-  }
-  return fallback;
-}
 
 function objectIdEquals(
   left: number | string | undefined,
@@ -1386,46 +1226,7 @@ function objectIdEquals(
   return String(left) === String(right);
 }
 
-function startHeightSync(): (() => void) | null {
-  if (typeof ResizeObserver === 'undefined') {
-    return null;
-  }
 
-  let raf = 0;
-  let lastHeight = 0;
-
-  const reportHeight = (): void => {
-    raf = 0;
-    const nextHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
-    if (!nextHeight || nextHeight === lastHeight) {
-      return;
-    }
-    lastHeight = nextHeight;
-    app.sendSizeChanged({ height: nextHeight });
-  };
-
-  const scheduleReport = (): void => {
-    if (raf) {
-      return;
-    }
-    raf = requestAnimationFrame(reportHeight);
-  };
-
-  const observer = new ResizeObserver(scheduleReport);
-  observer.observe(document.documentElement);
-  observer.observe(document.body);
-  window.addEventListener('load', scheduleReport);
-  scheduleReport();
-
-  return () => {
-    observer.disconnect();
-    if (raf) {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    }
-    window.removeEventListener('load', scheduleReport);
-  };
-}
 
 // ============================================================================
 // Start Application

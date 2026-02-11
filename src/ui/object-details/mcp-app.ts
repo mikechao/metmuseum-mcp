@@ -1,25 +1,6 @@
-import {
-  App,
-  applyDocumentTheme,
-  applyHostFonts,
-  applyHostStyleVariables,
-} from '@modelcontextprotocol/ext-apps';
-
-interface ObjectData {
-  objectID?: number | string;
-  title?: string;
-  artistDisplayName?: string;
-  artistDisplayBio?: string;
-  department?: string;
-  objectDate?: string;
-  medium?: string;
-  dimensions?: string;
-  creditLine?: string;
-  objectURL?: string;
-  primaryImage?: string;
-  primaryImageSmall?: string;
-  tags?: Array<{ term?: string }>;
-}
+import { App } from '@modelcontextprotocol/ext-apps';
+import type { HostContext, ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
+import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 
 interface AppState {
   object: ObjectData | null;
@@ -27,11 +8,6 @@ interface AppState {
   imageMimeType: string | null;
   errorMessage: string | null;
 }
-
-type ToolInputParams = Parameters<NonNullable<App['ontoolinput']>>[0];
-type ToolResult = Awaited<ReturnType<App['callServerTool']>>;
-type ToolContentBlock = NonNullable<ToolResult['content']>[number];
-type HostContext = ReturnType<App['getHostContext']>;
 
 const state: AppState = {
   object: null,
@@ -82,30 +58,12 @@ async function init(): Promise<void> {
   try {
     await app.connect();
     applyContext(app.getHostContext());
-    stopHeightSync = startHeightSync();
+    stopHeightSync = startHeightSync(s => app.sendSizeChanged(s), '.app');
     render();
     setStatus('Waiting for object details...', false);
   }
   catch (error) {
     setStatus(errorToMessage(error), true);
-  }
-}
-
-function applyContext(context: HostContext): void {
-  if (!context) {
-    return;
-  }
-
-  if (context.theme) {
-    applyDocumentTheme(context.theme);
-  }
-
-  if (context.styles?.variables) {
-    applyHostStyleVariables(context.styles.variables);
-  }
-
-  if (context.styles?.css?.fonts) {
-    applyHostFonts(context.styles.css.fonts);
   }
 }
 
@@ -320,143 +278,6 @@ function getObjectLinkUrl(objectData: ObjectData): string | null {
   return `https://www.metmuseum.org/art/collection/search/${objectId}`;
 }
 
-function extractText(result: ToolResult): string {
-  if (!Array.isArray(result.content)) {
-    return '';
-  }
-
-  return result.content
-    .filter(isTextContentBlock)
-    .map(block => block.text)
-    .join('\n')
-    .trim();
-}
-
-function getImageContent(
-  result: ToolResult,
-): Extract<ToolContentBlock, { type: 'image' }> | null {
-  if (!Array.isArray(result.content)) {
-    return null;
-  }
-
-  const block = result.content.find(isImageContentBlock);
-  return block ?? null;
-}
-
-function parseObjectResult(result: ToolResult): ObjectData | null {
-  const structured = result.structuredContent;
-  if (structured && typeof structured === 'object') {
-    const candidate = (structured as Record<string, unknown>).object;
-    if (candidate && typeof candidate === 'object') {
-      return candidate as ObjectData;
-    }
-  }
-
-  const text = extractText(result);
-  if (!text) {
-    return null;
-  }
-
-  const lines = text.split('\n');
-  const parsed: ObjectData = {};
-  let hasParsedField = false;
-
-  for (const line of lines) {
-    const dividerIndex = line.indexOf(':');
-    if (dividerIndex <= 0) {
-      continue;
-    }
-
-    const rawKey = line.slice(0, dividerIndex).trim();
-    const value = line.slice(dividerIndex + 1).trim();
-    if (!value) {
-      continue;
-    }
-
-    switch (rawKey) {
-      case 'Object ID': {
-        const numericId = Number(value);
-        parsed.objectID = Number.isFinite(numericId) ? numericId : value;
-        hasParsedField = true;
-        break;
-      }
-      case 'Title':
-        parsed.title = value;
-        hasParsedField = true;
-        break;
-      case 'Artist':
-        parsed.artistDisplayName = value;
-        hasParsedField = true;
-        break;
-      case 'Artist Bio':
-        parsed.artistDisplayBio = value;
-        hasParsedField = true;
-        break;
-      case 'Department':
-        parsed.department = value;
-        hasParsedField = true;
-        break;
-      case 'Date':
-      case 'Object Date':
-        parsed.objectDate = value;
-        hasParsedField = true;
-        break;
-      case 'Credit Line':
-        parsed.creditLine = value;
-        hasParsedField = true;
-        break;
-      case 'Medium':
-        parsed.medium = value;
-        hasParsedField = true;
-        break;
-      case 'Dimensions':
-        parsed.dimensions = value;
-        hasParsedField = true;
-        break;
-      case 'Primary Image URL':
-        parsed.primaryImage = value;
-        hasParsedField = true;
-        break;
-      case 'Object URL':
-        parsed.objectURL = value;
-        hasParsedField = true;
-        break;
-      case 'Tags':
-        parsed.tags = value
-          .split(',')
-          .map(term => ({ term: term.trim() }))
-          .filter(tag => tag.term);
-        hasParsedField = true;
-        break;
-      default:
-        break;
-    }
-  }
-
-  return hasParsedField ? parsed : null;
-}
-
-function isTextContentBlock(
-  block: ToolContentBlock,
-): block is Extract<ToolContentBlock, { type: 'text' }> {
-  return block.type === 'text';
-}
-
-function isImageContentBlock(
-  block: ToolContentBlock,
-): block is Extract<ToolContentBlock, { type: 'image' }> {
-  return block.type === 'image';
-}
-
-function stringOrFallback(value: string | undefined, fallback: string): string {
-  if (typeof value !== 'string') {
-    return fallback;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : fallback;
-}
-
 function setStatus(message: string, isError: boolean): void {
   statusEl.textContent = message;
   statusEl.classList.toggle('error', isError);
@@ -466,60 +287,6 @@ function updateMetaSummary(): void {
   metaSummaryEl.textContent = metaDetailsEl.open
     ? 'Hide full object details'
     : 'Show full object details';
-}
-
-function errorToMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return String(error);
-}
-
-function startHeightSync(): (() => void) | null {
-  if (typeof ResizeObserver === 'undefined') {
-    return null;
-  }
-
-  const appRoot = document.querySelector('.app') as HTMLElement | null;
-  if (!appRoot) {
-    return null;
-  }
-
-  let raf = 0;
-  let lastHeight = 0;
-
-  const reportHeight = (): void => {
-    raf = 0;
-    const nextHeight = Math.ceil(appRoot.getBoundingClientRect().height);
-    if (!nextHeight || nextHeight === lastHeight) {
-      return;
-    }
-    lastHeight = nextHeight;
-    app.sendSizeChanged({ height: nextHeight });
-  };
-
-  const scheduleReport = (): void => {
-    if (raf) {
-      return;
-    }
-    raf = requestAnimationFrame(reportHeight);
-  };
-
-  const observer = new ResizeObserver(scheduleReport);
-  observer.observe(appRoot);
-  observer.observe(document.documentElement);
-  observer.observe(document.body);
-  window.addEventListener('load', scheduleReport);
-  scheduleReport();
-
-  return () => {
-    observer.disconnect();
-    if (raf) {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    }
-    window.removeEventListener('load', scheduleReport);
-  };
 }
 
 init().catch((error: unknown) => {
