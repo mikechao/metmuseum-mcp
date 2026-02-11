@@ -20,7 +20,7 @@ export class ListDepartmentsTool {
         return `Department ID: ${department.departmentId}, Display Name: ${department.displayName}`;
       }).join('\n');
       return {
-        content: [{ type: 'text' as const, text }],
+        content: [{ type: 'text', text }],
         structuredContent: {
           departments,
         },
@@ -30,7 +30,7 @@ export class ListDepartmentsTool {
     catch (error) {
       console.error('Error listing departments:', error);
       return {
-        content: [{ type: 'text' as const, text: `Error listing departments: ${error}` }],
+        content: [{ type: 'text', text: `Error listing departments: ${error}` }],
         isError: true,
       };
     }

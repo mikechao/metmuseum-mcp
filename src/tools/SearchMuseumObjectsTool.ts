@@ -80,7 +80,7 @@ export class SearchMuseumObjectsTool {
 
       if (searchResult.total === 0 || !searchResult.objectIDs) {
         return {
-          content: [{ type: 'text' as const, text: 'No objects found' }],
+          content: [{ type: 'text', text: 'No objects found' }],
           structuredContent: {
             total: 0,
             page: 1,
@@ -100,7 +100,7 @@ export class SearchMuseumObjectsTool {
       const objectIDs = allObjectIds.slice(start, start + pageSize);
       const text = `Total objects found: ${total}\nPage: ${safePage}/${totalPages}\nObject IDs: ${objectIDs.join(', ')}`;
       return {
-        content: [{ type: 'text' as const, text }],
+        content: [{ type: 'text', text }],
         structuredContent: {
           total,
           page: safePage,
@@ -114,7 +114,7 @@ export class SearchMuseumObjectsTool {
     catch (error) {
       console.error('Error searching museum objects:', error);
       return {
-        content: [{ type: 'text' as const, text: `Error searching museum objects: ${error}` }],
+        content: [{ type: 'text', text: `Error searching museum objects: ${error}` }],
         isError: true,
       };
     }

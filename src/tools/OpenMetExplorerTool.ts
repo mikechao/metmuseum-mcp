@@ -19,7 +19,7 @@ export class OpenMetExplorerTool {
   public async execute(args: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     return {
       content: [{
-        type: 'text' as const,
+        type: 'text',
         text: `Opening Met Explorer UI.
 
 The explorer app automatically provides its search results in your context as users browse.
