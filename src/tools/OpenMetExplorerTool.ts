@@ -1,3 +1,4 @@
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import z from 'zod';
 
 export class OpenMetExplorerTool {
@@ -15,7 +16,7 @@ export class OpenMetExplorerTool {
     departmentId: z.number().optional().describe('Optional department id to pre-select in the explorer'),
   }).describe('Open the Met Museum explorer app UI');
 
-  public async execute(args: z.infer<typeof this.inputSchema>) {
+  public async execute(args: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     return {
       content: [{
         type: 'text' as const,

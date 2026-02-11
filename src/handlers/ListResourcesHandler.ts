@@ -1,3 +1,4 @@
+import type { ListResourcesResult } from '@modelcontextprotocol/sdk/types.js';
 import type { AppResource } from '../types/types.js';
 
 export class ListResourcesHandler {
@@ -7,7 +8,7 @@ export class ListResourcesHandler {
     this.appResources = appResources;
   }
 
-  public async handleListResources() {
+  public async handleListResources(): Promise<ListResourcesResult> {
     return {
       resources: this.appResources.map(resource => ({
         uri: resource.uri,

@@ -1,3 +1,4 @@
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import z from 'zod';
 
@@ -12,7 +13,7 @@ export class ListDepartmentsTool {
     this.apiClient = apiClient;
   }
 
-  public async execute() {
+  public async execute(): Promise<CallToolResult> {
     try {
       const departments = await this.apiClient.listDepartments();
       const text = departments.map((department) => {

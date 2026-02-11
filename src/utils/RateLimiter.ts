@@ -48,4 +48,3 @@ class RateLimiter {
 
 // Create and export a singleton instance for Met Museum API
 export const metMuseumRateLimiter = new RateLimiter(80);
-

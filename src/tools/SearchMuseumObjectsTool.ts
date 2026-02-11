@@ -1,3 +1,4 @@
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import z from 'zod';
 
@@ -60,7 +61,7 @@ export class SearchMuseumObjectsTool {
     dateEnd,
     page,
     pageSize,
-  }: z.infer<typeof this.inputSchema>) {
+  }: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     try {
       const searchResult = await this.apiClient.searchObjects({
         q,

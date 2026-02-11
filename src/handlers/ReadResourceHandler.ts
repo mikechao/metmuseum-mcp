@@ -1,6 +1,6 @@
-import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import type { ReadResourceRequest, ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import type { AppResource } from '../types/types.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 
 const APP_CSP_RESOURCE_DOMAINS = [
   'https://images.metmuseum.org',
@@ -14,7 +14,7 @@ export class ReadResourceHandler {
     this.appResources = appResources;
   }
 
-  public async handleReadResource(request: ReadResourceRequest) {
+  public async handleReadResource(request: ReadResourceRequest): Promise<ReadResourceResult> {
     const uri = request.params.uri;
     const resource = this.appResources.find(candidate => candidate.uri === uri);
 

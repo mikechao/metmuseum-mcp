@@ -1,3 +1,4 @@
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import imageToBase64 from 'image-to-base64';
 import z from 'zod';
@@ -19,7 +20,7 @@ export class GetObjectTool {
     this.apiClient = apiClient;
   }
 
-  public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>) {
+  public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     try {
       const data = await this.apiClient.getObject(objectId);
       const text = `Object ID: ${data.objectID}\n`
