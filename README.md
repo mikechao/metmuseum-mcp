@@ -133,12 +133,12 @@ HOST=127.0.0.1 PORT=8080 ALLOWED_HOSTS=localhost,127.0.0.1 npx -y metmuseum-mcp 
 
 ### Usage with Claude Desktop
 
-## Via Desktop Extension (DXT)
+## Via MCP Bundle (MCPB)
 
-1. Download the `dxt` file from the [Releases](https://github.com/mikechao/metmuseum-mcp/releases)
+1. Download the `mcpb` file from the [Releases](https://github.com/mikechao/metmuseum-mcp/releases)
 2. Open it with Claude Desktop
    or
-   Go to File -> Settings -> Extensions and drag the .DXT file to the window to install it
+   Go to File -> Settings -> Extensions and drag the .mcpb file to the window to install it
 
 ## Via npx
 
