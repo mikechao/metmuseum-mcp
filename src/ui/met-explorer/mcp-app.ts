@@ -823,7 +823,7 @@ function updateAddContextButton(): void {
     ? 'Adding...'
     : isAdded
       ? 'Added'
-      : 'Add to context';
+      : 'Add to conversation';
 }
 
 function buildObjectContextText(objectData: ObjectData): string {
