@@ -877,15 +877,12 @@ function buildSearchResultsContextText(): string | null {
     .join('\n');
 
   return [
-    'These are the search results currently displayed in the Met Explorer app (verified title-to-object ID pairs).',
-    'When the user refers to "these results," "the results," or asks for curation, summaries, or must-see lists, use this data directly without calling search-museum-objects.',
-    'Call get-museum-object only when the user asks for deeper detail on a specific item.',
-    'Do not invent object IDs or titles that are not in this list.',
-    '',
-    queryLine,
+    `Met Explorer results for ${queryLine}`,
     pageLine,
     '',
     resultLines,
+    '',
+    'These results are already available — no need to call search-museum-objects for this data.',
   ].join('\n');
 }
 
