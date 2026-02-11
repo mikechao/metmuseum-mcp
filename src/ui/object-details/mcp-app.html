@@ -65,7 +65,7 @@
       .image-wrap {
         position: relative;
         margin: 0;
-        min-height: clamp(250px, 54vh, 680px);
+        min-height: clamp(300px, 66vh, 860px);
         border-bottom: 1px solid var(--line);
         overflow: hidden;
       }
@@ -92,8 +92,8 @@
 
       .image-wrap img {
         width: auto;
-        max-width: min(96%, 920px);
-        max-height: clamp(280px, 55vh, 720px);
+        max-width: min(98%, 1080px);
+        max-height: clamp(340px, 66vh, 860px);
         object-fit: contain;
         display: block;
         background: var(--placeholder);
@@ -103,37 +103,6 @@
         transition:
           max-height 160ms ease,
           max-width 160ms ease;
-      }
-
-      .image-wrap img.expanded {
-        max-height: min(78vh, 900px);
-        max-width: min(98%, 1180px);
-      }
-
-      .image-actions {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        z-index: 3;
-      }
-
-      .image-toggle-btn {
-        width: auto;
-        min-height: 32px;
-        padding: 0 10px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        background: rgba(20, 20, 20, 0.45);
-        color: #fff;
-        font: inherit;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-      }
-
-      .image-toggle-btn:hover {
-        border-color: rgba(255, 255, 255, 0.8);
       }
 
       .body {
@@ -269,7 +238,7 @@
         }
 
         .image-wrap {
-          min-height: clamp(220px, 48vh, 420px);
+          min-height: clamp(250px, 58vh, 540px);
         }
 
         .image-stage {
@@ -277,7 +246,7 @@
         }
 
         .image-wrap img {
-          max-height: min(52vh, 430px);
+          max-height: min(64vh, 560px);
         }
 
         .body {
@@ -299,11 +268,6 @@
           <div id="image-ambient" class="image-ambient" aria-hidden="true"></div>
           <div class="image-stage">
             <img id="object-image" alt="Artwork image" />
-          </div>
-          <div class="image-actions">
-            <button id="image-toggle-btn" class="image-toggle-btn" type="button" aria-expanded="false">
-              Expand image
-            </button>
           </div>
         </div>
         <div class="body">

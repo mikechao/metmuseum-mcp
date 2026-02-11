@@ -26,7 +26,6 @@ interface AppState {
   imageData: string | null;
   imageMimeType: string | null;
   errorMessage: string | null;
-  isImageExpanded: boolean;
 }
 
 type ToolInputParams = Parameters<NonNullable<App['ontoolinput']>>[0];
@@ -39,7 +38,6 @@ const state: AppState = {
   imageData: null,
   imageMimeType: null,
   errorMessage: null,
-  isImageExpanded: false,
 };
 
 const titleEl = document.getElementById('title') as HTMLHeadingElement;
@@ -50,7 +48,6 @@ const metaEl = document.getElementById('meta') as HTMLDListElement;
 const imageWrapEl = document.getElementById('image-wrap') as HTMLDivElement;
 const imageAmbientEl = document.getElementById('image-ambient') as HTMLDivElement;
 const imageEl = document.getElementById('object-image') as HTMLImageElement;
-const imageToggleBtnEl = document.getElementById('image-toggle-btn') as HTMLButtonElement;
 const objectLinkEl = document.getElementById('object-link') as HTMLAnchorElement;
 const statusEl = document.getElementById('status') as HTMLDivElement;
 const emptyEl = document.getElementById('empty') as HTMLDivElement;
@@ -79,22 +76,7 @@ app.onteardown = async () => {
   return {};
 };
 
-imageToggleBtnEl.addEventListener('click', () => {
-  state.isImageExpanded = !state.isImageExpanded;
-  imageEl.classList.toggle('expanded', state.isImageExpanded);
-  updateImageToggleButton();
-});
 metaDetailsEl.addEventListener('toggle', updateMetaSummary);
-
-document.addEventListener('keydown', (event: KeyboardEvent) => {
-  if (event.key !== 'Escape' || !state.isImageExpanded) {
-    return;
-  }
-
-  state.isImageExpanded = false;
-  imageEl.classList.remove('expanded');
-  updateImageToggleButton();
-});
 
 async function init(): Promise<void> {
   try {
@@ -135,10 +117,8 @@ function applyInputState(rawInput: unknown): void {
   const input = rawInput as Record<string, unknown>;
   const objectId = input.objectId;
   if (typeof objectId === 'number' && Number.isFinite(objectId)) {
-    state.isImageExpanded = false;
     setStatus(`Loading object ${objectId}...`, false);
     titleEl.textContent = 'Loading object details...';
-    updateImageToggleButton();
   }
 }
 
@@ -148,7 +128,6 @@ function applyToolResult(result: ToolResult): void {
     state.object = null;
     state.imageData = null;
     state.imageMimeType = null;
-    state.isImageExpanded = false;
     render();
     setStatus(state.errorMessage, true);
     return;
@@ -160,7 +139,6 @@ function applyToolResult(result: ToolResult): void {
   state.imageData = imageBlock?.data ?? null;
   state.imageMimeType = imageBlock?.mimeType ?? null;
   state.errorMessage = null;
-  state.isImageExpanded = false;
   render();
 
   const objectId = getObjectIdLabel(object);
@@ -180,30 +158,24 @@ function render(): void {
 
   if (state.errorMessage) {
     titleEl.textContent = 'Unable to load object details';
-    state.isImageExpanded = false;
-    imageEl.classList.remove('expanded');
     imageWrapEl.hidden = true;
     highlightsEl.hidden = true;
     metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
     emptyEl.textContent = state.errorMessage;
     emptyEl.hidden = false;
-    updateImageToggleButton();
     updateMetaSummary();
     return;
   }
 
   if (!state.object) {
     titleEl.textContent = 'Waiting for object details...';
-    state.isImageExpanded = false;
-    imageEl.classList.remove('expanded');
     imageWrapEl.hidden = true;
     highlightsEl.hidden = true;
     metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
     emptyEl.textContent = 'No object data is available for this result.';
     emptyEl.hidden = false;
-    updateImageToggleButton();
     updateMetaSummary();
     return;
   }
@@ -216,20 +188,15 @@ function render(): void {
   const imageUrl = getImageUrl(objectData);
   if (imageUrl) {
     imageEl.src = imageUrl;
-    imageEl.classList.toggle('expanded', state.isImageExpanded);
     imageAmbientEl.style.backgroundImage = `url("${imageUrl}")`;
     imageWrapEl.hidden = false;
     metaDetailsEl.open = false;
-    updateImageToggleButton();
   }
   else {
-    state.isImageExpanded = false;
     imageEl.removeAttribute('src');
-    imageEl.classList.remove('expanded');
     imageAmbientEl.style.backgroundImage = '';
     imageWrapEl.hidden = true;
     metaDetailsEl.open = true;
-    updateImageToggleButton();
   }
 
   appendHighlight('Artist', objectData.artistDisplayName);
@@ -493,11 +460,6 @@ function stringOrFallback(value: string | undefined, fallback: string): string {
 function setStatus(message: string, isError: boolean): void {
   statusEl.textContent = message;
   statusEl.classList.toggle('error', isError);
-}
-
-function updateImageToggleButton(): void {
-  imageToggleBtnEl.textContent = state.isImageExpanded ? 'Collapse image' : 'Expand image';
-  imageToggleBtnEl.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
 }
 
 function updateMetaSummary(): void {
