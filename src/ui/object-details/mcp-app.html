@@ -32,7 +32,6 @@
       html,
       body {
         margin: 0;
-        min-height: 100%;
         width: 100%;
         background: var(--surface);
         color: var(--text);
@@ -44,6 +43,10 @@
 
       * {
         box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
       }
 
       .app {
@@ -60,27 +63,58 @@
       }
 
       .image-wrap {
+        position: relative;
+        margin: 0;
+        min-height: clamp(250px, 54vh, 680px);
         border-bottom: 1px solid var(--line);
+        overflow: hidden;
+      }
+
+      .image-ambient {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        filter: blur(18px) saturate(0.85);
+        transform: scale(1.08);
+        opacity: 0.42;
+      }
+
+      .image-stage {
+        position: relative;
+        z-index: 1;
+        min-height: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
       }
 
       .image-wrap img {
-        width: 100%;
-        max-height: clamp(220px, 42vh, 360px);
+        width: auto;
+        max-width: min(96%, 920px);
+        max-height: clamp(280px, 55vh, 720px);
         object-fit: contain;
         display: block;
         background: var(--placeholder);
-        transition: max-height 160ms ease;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+        transition:
+          max-height 160ms ease,
+          max-width 160ms ease;
       }
 
       .image-wrap img.expanded {
-        max-height: min(72vh, 760px);
+        max-height: min(78vh, 900px);
+        max-width: min(98%, 1180px);
       }
 
       .image-actions {
-        padding: 8px 10px;
-        border-top: 1px solid var(--line);
-        display: flex;
-        justify-content: flex-end;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 3;
       }
 
       .image-toggle-btn {
@@ -88,21 +122,27 @@
         min-height: 32px;
         padding: 0 10px;
         border-radius: 8px;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        background: rgba(20, 20, 20, 0.45);
+        color: #fff;
         font: inherit;
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
+        backdrop-filter: blur(4px);
       }
 
       .image-toggle-btn:hover {
-        border-color: var(--accent);
+        border-color: rgba(255, 255, 255, 0.8);
       }
 
       .body {
         padding: 14px;
+      }
+
+      .text-header {
+        display: grid;
+        gap: 6px;
       }
 
       .kicker {
@@ -119,10 +159,56 @@
         line-height: 1.25;
       }
 
+      .highlights {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .highlights li {
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--accent-soft);
+        color: var(--muted);
+        padding: 4px 10px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .meta-details {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+
+      .meta-details summary {
+        list-style: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        padding: 10px 12px;
+        user-select: none;
+      }
+
+      .meta-details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .meta-details[open] summary {
+        border-bottom: 1px solid var(--line);
+      }
+
       .meta {
-        margin: 10px 0 0;
+        margin: 0;
         display: grid;
         gap: 8px;
+        padding: 10px 12px 12px;
       }
 
       .meta-row {
@@ -146,7 +232,7 @@
       }
 
       .object-link {
-        margin-top: 12px;
+        margin-top: 10px;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -182,6 +268,18 @@
           padding: 8px;
         }
 
+        .image-wrap {
+          min-height: clamp(220px, 48vh, 420px);
+        }
+
+        .image-stage {
+          padding: 10px;
+        }
+
+        .image-wrap img {
+          max-height: min(52vh, 430px);
+        }
+
         .body {
           padding: 12px;
         }
@@ -198,7 +296,10 @@
     <main class="app">
       <article class="card">
         <div id="image-wrap" class="image-wrap" hidden>
-          <img id="object-image" alt="Artwork image" />
+          <div id="image-ambient" class="image-ambient" aria-hidden="true"></div>
+          <div class="image-stage">
+            <img id="object-image" alt="Artwork image" />
+          </div>
           <div class="image-actions">
             <button id="image-toggle-btn" class="image-toggle-btn" type="button" aria-expanded="false">
               Expand image
@@ -206,9 +307,15 @@
           </div>
         </div>
         <div class="body">
-          <p class="kicker">Met Collection Object</p>
-          <h1 id="title" class="title">Loading object details...</h1>
-          <dl id="meta" class="meta"></dl>
+          <div id="text-header" class="text-header">
+            <p class="kicker">Met Collection Object</p>
+            <h1 id="title" class="title">Loading object details...</h1>
+          </div>
+          <ul id="highlights" class="highlights" hidden></ul>
+          <details id="meta-details" class="meta-details" open>
+            <summary id="meta-summary">Show full object details</summary>
+            <dl id="meta" class="meta"></dl>
+          </details>
           <a id="object-link" class="object-link" href="#" target="_blank" rel="noreferrer noopener" hidden>
             Open on metmuseum.org
           </a>

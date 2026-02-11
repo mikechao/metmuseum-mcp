@@ -43,8 +43,12 @@ const state: AppState = {
 };
 
 const titleEl = document.getElementById('title') as HTMLHeadingElement;
+const highlightsEl = document.getElementById('highlights') as HTMLUListElement;
+const metaDetailsEl = document.getElementById('meta-details') as HTMLDetailsElement;
+const metaSummaryEl = document.getElementById('meta-summary') as HTMLElement;
 const metaEl = document.getElementById('meta') as HTMLDListElement;
 const imageWrapEl = document.getElementById('image-wrap') as HTMLDivElement;
+const imageAmbientEl = document.getElementById('image-ambient') as HTMLDivElement;
 const imageEl = document.getElementById('object-image') as HTMLImageElement;
 const imageToggleBtnEl = document.getElementById('image-toggle-btn') as HTMLButtonElement;
 const objectLinkEl = document.getElementById('object-link') as HTMLAnchorElement;
@@ -80,6 +84,7 @@ imageToggleBtnEl.addEventListener('click', () => {
   imageEl.classList.toggle('expanded', state.isImageExpanded);
   updateImageToggleButton();
 });
+metaDetailsEl.addEventListener('toggle', updateMetaSummary);
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
   if (event.key !== 'Escape' || !state.isImageExpanded) {
@@ -168,18 +173,23 @@ function applyToolResult(result: ToolResult): void {
 
 function render(): void {
   metaEl.innerHTML = '';
+  highlightsEl.innerHTML = '';
   emptyEl.hidden = true;
   statusEl.classList.toggle('error', Boolean(state.errorMessage));
+  metaDetailsEl.hidden = false;
 
   if (state.errorMessage) {
     titleEl.textContent = 'Unable to load object details';
     state.isImageExpanded = false;
     imageEl.classList.remove('expanded');
     imageWrapEl.hidden = true;
+    highlightsEl.hidden = true;
+    metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
     emptyEl.textContent = state.errorMessage;
     emptyEl.hidden = false;
     updateImageToggleButton();
+    updateMetaSummary();
     return;
   }
 
@@ -188,31 +198,45 @@ function render(): void {
     state.isImageExpanded = false;
     imageEl.classList.remove('expanded');
     imageWrapEl.hidden = true;
+    highlightsEl.hidden = true;
+    metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
     emptyEl.textContent = 'No object data is available for this result.';
     emptyEl.hidden = false;
     updateImageToggleButton();
+    updateMetaSummary();
     return;
   }
 
   const objectData = state.object;
-  titleEl.textContent = stringOrFallback(objectData.title, 'Untitled');
+  const title = stringOrFallback(objectData.title, 'Untitled');
+  titleEl.textContent = title;
   imageEl.alt = stringOrFallback(objectData.title, 'Artwork image');
 
   const imageUrl = getImageUrl(objectData);
   if (imageUrl) {
     imageEl.src = imageUrl;
     imageEl.classList.toggle('expanded', state.isImageExpanded);
+    imageAmbientEl.style.backgroundImage = `url("${imageUrl}")`;
     imageWrapEl.hidden = false;
+    metaDetailsEl.open = false;
     updateImageToggleButton();
   }
   else {
     state.isImageExpanded = false;
     imageEl.removeAttribute('src');
     imageEl.classList.remove('expanded');
+    imageAmbientEl.style.backgroundImage = '';
     imageWrapEl.hidden = true;
+    metaDetailsEl.open = true;
     updateImageToggleButton();
   }
+
+  appendHighlight('Artist', objectData.artistDisplayName);
+  appendHighlight('Date', objectData.objectDate);
+  appendHighlight('Department', objectData.department);
+  appendHighlight('Medium', objectData.medium);
+  highlightsEl.hidden = highlightsEl.childElementCount === 0;
 
   appendMetaRow('Object ID', getObjectIdLabel(objectData));
   appendMetaRow('Artist', objectData.artistDisplayName);
@@ -223,9 +247,14 @@ function render(): void {
   appendMetaRow('Dimensions', objectData.dimensions);
   appendMetaRow('Credit Line', objectData.creditLine);
   appendMetaRow('Tags', getTagsLabel(objectData.tags));
+  metaDetailsEl.hidden = metaEl.childElementCount === 0;
+  if (!metaDetailsEl.hidden) {
+    updateMetaSummary();
+  }
 
-  if (typeof objectData.objectURL === 'string' && objectData.objectURL.length > 0) {
-    objectLinkEl.href = objectData.objectURL;
+  const objectLink = getObjectLinkUrl(objectData);
+  if (objectLink) {
+    objectLinkEl.href = objectLink;
     objectLinkEl.hidden = false;
   }
   else {
@@ -251,6 +280,16 @@ function appendMetaRow(label: string, value: string | undefined): void {
 
   row.append(key, content);
   metaEl.append(row);
+}
+
+function appendHighlight(label: string, value: string | undefined): void {
+  if (!value) {
+    return;
+  }
+
+  const item = document.createElement('li');
+  item.textContent = `${label}: ${value}`;
+  highlightsEl.append(item);
 }
 
 function getObjectIdLabel(objectData: ObjectData | null): string | undefined {
@@ -299,6 +338,19 @@ function getImageUrl(objectData: ObjectData): string | null {
   }
 
   return null;
+}
+
+function getObjectLinkUrl(objectData: ObjectData): string | null {
+  if (typeof objectData.objectURL === 'string' && objectData.objectURL.trim()) {
+    return objectData.objectURL.trim();
+  }
+
+  const objectId = getObjectIdLabel(objectData);
+  if (!objectId) {
+    return null;
+  }
+
+  return `https://www.metmuseum.org/art/collection/search/${objectId}`;
 }
 
 function extractText(result: ToolResult): string {
@@ -398,6 +450,10 @@ function parseObjectResult(result: ToolResult): ObjectData | null {
         parsed.primaryImage = value;
         hasParsedField = true;
         break;
+      case 'Object URL':
+        parsed.objectURL = value;
+        hasParsedField = true;
+        break;
       case 'Tags':
         parsed.tags = value
           .split(',')
@@ -444,6 +500,12 @@ function updateImageToggleButton(): void {
   imageToggleBtnEl.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
 }
 
+function updateMetaSummary(): void {
+  metaSummaryEl.textContent = metaDetailsEl.open
+    ? 'Hide full object details'
+    : 'Show full object details';
+}
+
 function errorToMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -456,12 +518,17 @@ function startHeightSync(): (() => void) | null {
     return null;
   }
 
+  const appRoot = document.querySelector('.app') as HTMLElement | null;
+  if (!appRoot) {
+    return null;
+  }
+
   let raf = 0;
   let lastHeight = 0;
 
   const reportHeight = (): void => {
     raf = 0;
-    const nextHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    const nextHeight = Math.ceil(appRoot.getBoundingClientRect().height);
     if (!nextHeight || nextHeight === lastHeight) {
       return;
     }
@@ -477,6 +544,7 @@ function startHeightSync(): (() => void) | null {
   };
 
   const observer = new ResizeObserver(scheduleReport);
+  observer.observe(appRoot);
   observer.observe(document.documentElement);
   observer.observe(document.body);
   window.addEventListener('load', scheduleReport);
