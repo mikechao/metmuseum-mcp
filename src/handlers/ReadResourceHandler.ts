@@ -1,7 +1,7 @@
 import type { ReadResourceRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { AppResource } from '../types/types.js';
 
-const MET_EXPLORER_CSP_RESOURCE_DOMAINS = [
+const APP_CSP_RESOURCE_DOMAINS = [
   'https://images.metmuseum.org',
   'data:',
 ];
@@ -27,7 +27,7 @@ export class ReadResourceHandler {
           _meta: {
             ui: {
               csp: {
-                resourceDomains: MET_EXPLORER_CSP_RESOURCE_DOMAINS,
+                resourceDomains: APP_CSP_RESOURCE_DOMAINS,
               },
             },
           },
