@@ -1,4 +1,4 @@
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolResult, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import imageToBase64 from 'image-to-base64';
 import z from 'zod';
@@ -35,18 +35,26 @@ export class GetObjectTool {
         + `${data.primaryImage ? `Primary Image URL: ${data.primaryImage}\n` : ''}`
         + `${data.tags ? `Tags: ${data.tags.map(tag => tag.term).join(', ')}\n` : ''}`;
 
-      const content = [];
+      const content: Array<TextContent | ImageContent> = [];
       content.push({
-        type: 'text' as const,
+        type: 'text',
         text,
       });
       if (returnImage && data.primaryImageSmall) {
-        const imageBase64 = await imageToBase64(data.primaryImageSmall);
-        content.push({
-          type: 'image' as const,
-          data: imageBase64,
-          mimeType: 'image/jpeg',
-        });
+        try {
+          const imageBase64 = await imageToBase64(data.primaryImageSmall);
+          content.push({
+            type: 'image',
+            data: imageBase64,
+            mimeType: 'image/jpeg',
+          });
+        }
+        catch (error) {
+          console.warn(
+            `Failed to fetch image for museum object id ${objectId}. Returning metadata only.`,
+            error,
+          );
+        }
       }
 
       return {
@@ -59,13 +67,13 @@ export class GetObjectTool {
     catch (error) {
       if (error instanceof MetMuseumApiError && error.status === 404) {
         return {
-          content: [{ type: 'text' as const, text: `Museum object id ${objectId} was not found.` }],
+          content: [{ type: 'text', text: `Museum object id ${objectId} was not found.` }],
           isError: true,
         };
       }
       console.error('Error getting museum object:', error);
       return {
-        content: [{ type: 'text' as const, text: `Error getting museum object id ${objectId}: ${error}` }],
+        content: [{ type: 'text', text: `Error getting museum object id ${objectId}: ${error}` }],
         isError: true,
       };
     }
