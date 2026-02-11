@@ -1232,4 +1232,6 @@ function objectIdEquals(
 // Start Application
 // ============================================================================
 
-init();
+init().catch((error: unknown) => {
+  setStatus(errorToMessage(error), true);
+});
