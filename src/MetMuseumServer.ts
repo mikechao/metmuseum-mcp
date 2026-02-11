@@ -14,126 +14,126 @@ import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
 import { GetMuseumObjectAppResource } from './ui/GetMuseumObjectAppResource.js';
 import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
-export class MetMuseumServer {
-  private server: McpServer;
-  private listResourcesHandler: ListResourcesHandler;
-  private readResourceHandler: ReadResourceHandler;
-  private metMuseumApiClient: MetMuseumApiClient;
-  private listDepartments: ListDepartmentsTool;
-  private search: SearchMuseumObjectsTool;
-  private getMuseumObject: GetObjectTool;
-  private openMetExplorer: OpenMetExplorerTool;
-  private openMetExplorerAppResource: OpenMetExplorerAppResource;
-  private getMuseumObjectAppResource: GetMuseumObjectAppResource;
-
-  constructor() {
-    this.server = new McpServer(
-      {
-        name: 'met-museum-mcp',
-        version: '1.0.0',
+export function createMetMuseumServer(): McpServer {
+  const server = new McpServer(
+    {
+      name: 'met-museum-mcp',
+      version: '1.0.0',
+    },
+    {
+      capabilities: {
+        tools: {},
+        resources: {},
       },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
+    },
+  );
+
+  const metMuseumApiClient = new MetMuseumApiClient();
+  const listDepartments = new ListDepartmentsTool(metMuseumApiClient);
+  const search = new SearchMuseumObjectsTool(metMuseumApiClient);
+  const getMuseumObject = new GetObjectTool(metMuseumApiClient);
+  const openMetExplorer = new OpenMetExplorerTool();
+  const openMetExplorerAppResource = new OpenMetExplorerAppResource();
+  const getMuseumObjectAppResource = new GetMuseumObjectAppResource();
+
+  const listResourcesHandler = new ListResourcesHandler(
+    [openMetExplorerAppResource, getMuseumObjectAppResource],
+  );
+  const readResourceHandler = new ReadResourceHandler(
+    [openMetExplorerAppResource, getMuseumObjectAppResource],
+  );
+
+  setupErrorHandling(server);
+  setupTools(
+    server,
+    listDepartments,
+    search,
+    getMuseumObject,
+    openMetExplorer,
+    getMuseumObjectAppResource,
+  );
+  setupRequestHandlers(server, listResourcesHandler, readResourceHandler);
+
+  return server;
+}
+
+function setupTools(
+  server: McpServer,
+  listDepartments: ListDepartmentsTool,
+  search: SearchMuseumObjectsTool,
+  getMuseumObject: GetObjectTool,
+  openMetExplorer: OpenMetExplorerTool,
+  getMuseumObjectAppResource: GetMuseumObjectAppResource,
+): void {
+  server.registerTool(
+    listDepartments.name,
+    {
+      description: listDepartments.description,
+      inputSchema: listDepartments.inputSchema,
+    },
+    listDepartments.execute.bind(listDepartments),
+  );
+  server.registerTool(
+    search.name,
+    {
+      description: search.description,
+      inputSchema: search.inputSchema,
+    },
+    search.execute.bind(search),
+  );
+  registerAppTool(
+    server,
+    getMuseumObject.name,
+    {
+      description: getMuseumObject.description,
+      inputSchema: getMuseumObject.inputSchema.shape,
+      _meta: {
+        ui: {
+          resourceUri: getMuseumObjectAppResource.uri,
         },
       },
-    );
-    this.metMuseumApiClient = new MetMuseumApiClient();
-    this.listDepartments = new ListDepartmentsTool(this.metMuseumApiClient);
-    this.search = new SearchMuseumObjectsTool(this.metMuseumApiClient);
-    this.getMuseumObject = new GetObjectTool(this.metMuseumApiClient);
-    this.openMetExplorer = new OpenMetExplorerTool();
-    this.openMetExplorerAppResource = new OpenMetExplorerAppResource();
-    this.getMuseumObjectAppResource = new GetMuseumObjectAppResource();
-    this.listResourcesHandler = new ListResourcesHandler(
-      [this.openMetExplorerAppResource, this.getMuseumObjectAppResource],
-    );
-    this.readResourceHandler = new ReadResourceHandler(
-      [this.openMetExplorerAppResource, this.getMuseumObjectAppResource],
-    );
-    this.setupErrorHandling();
-    this.setupTools();
-    this.setupRequestHandlers();
-  }
-
-  private setupTools(): void {
-    this.server.registerTool(
-      this.listDepartments.name,
-      {
-        description: this.listDepartments.description,
-        inputSchema: this.listDepartments.inputSchema,
-      },
-      this.listDepartments.execute.bind(this.listDepartments),
-    );
-    this.server.registerTool(
-      this.search.name,
-      {
-        description: this.search.description,
-        inputSchema: this.search.inputSchema,
-      },
-      this.search.execute.bind(this.search),
-    );
-    registerAppTool(
-      this.server,
-      this.getMuseumObject.name,
-      {
-        description: this.getMuseumObject.description,
-        inputSchema: this.getMuseumObject.inputSchema.shape,
-        _meta: {
-          ui: {
-            resourceUri: this.getMuseumObjectAppResource.uri,
-          },
+    },
+    getMuseumObject.execute.bind(getMuseumObject),
+  );
+  registerAppTool(
+    server,
+    openMetExplorer.name,
+    {
+      description: openMetExplorer.description,
+      inputSchema: openMetExplorer.inputSchema.shape,
+      _meta: {
+        ui: {
+          resourceUri: openMetExplorer.resourceUri,
         },
       },
-      this.getMuseumObject.execute.bind(this.getMuseumObject),
-    );
-    registerAppTool(
-      this.server,
-      this.openMetExplorer.name,
-      {
-        description: this.openMetExplorer.description,
-        inputSchema: this.openMetExplorer.inputSchema.shape,
-        _meta: {
-          ui: {
-            resourceUri: this.openMetExplorer.resourceUri,
-          },
-        },
-      },
-      this.openMetExplorer.execute.bind(this.openMetExplorer),
-    );
-  }
+    },
+    openMetExplorer.execute.bind(openMetExplorer),
+  );
+}
 
-  private setupRequestHandlers(): void {
-    // Note: Tool call handling is done automatically by registerTool/registerAppTool above.
-    // We only need custom handlers for resources.
-    this.server.server.setRequestHandler(
-      ListResourcesRequestSchema,
-      async () => {
-        return await this.listResourcesHandler.handleListResources();
-      },
-    );
-    this.server.server.setRequestHandler(
-      ReadResourceRequestSchema,
-      async (request) => {
-        return await this.readResourceHandler.handleReadResource(
-          request,
-        );
-      },
-    );
-  }
+function setupRequestHandlers(
+  server: McpServer,
+  listResourcesHandler: ListResourcesHandler,
+  readResourceHandler: ReadResourceHandler,
+): void {
+  // Note: Tool call handling is done automatically by registerTool/registerAppTool above.
+  // We only need custom handlers for resources.
+  server.server.setRequestHandler(
+    ListResourcesRequestSchema,
+    async () => {
+      return await listResourcesHandler.handleListResources();
+    },
+  );
+  server.server.setRequestHandler(
+    ReadResourceRequestSchema,
+    async (request) => {
+      return await readResourceHandler.handleReadResource(request);
+    },
+  );
+}
 
-  private setupErrorHandling(): void {
-    this.server.server.onerror = (error) => {
-      console.error('[MCP Error]', error);
-    };
-  }
-
-  get serverInstance(): McpServer {
-    return this.server;
-  }
-
-  async close(): Promise<void> {
-    await this.server.close();
-  }
+function setupErrorHandling(server: McpServer): void {
+  server.server.onerror = (error) => {
+    console.error('[MCP Error]', error);
+  };
 }
