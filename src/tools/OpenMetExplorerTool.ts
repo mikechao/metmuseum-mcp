@@ -22,12 +22,12 @@ export class OpenMetExplorerTool {
         type: 'text',
         text: `Opening Met Explorer UI.
 
-The explorer app automatically provides its search results in your context as users browse.
-- When the user refers to "these results," "the results," or "what I see," they mean the explorer's data already in your context — use it directly without additional tool calls.
+The explorer app attempts to provide visible search results in context while users browse (host capabilities vary).
+- When results context is present, and the user refers to "these results," "the results," or "what I see," use that explorer data directly without additional tool calls.
 - For curation, summaries, must-see lists, or walkthrough requests, default to the explorer's context data unless the user explicitly asks for a new or different search.
 - Treat titles and object IDs from the explorer as source of truth. Do not invent IDs or titles not present in the context.
 - Call get-museum-object only when the user asks to go deeper on a specific item or requests image-level detail.
-- Ask the user to click "Add to context" when they want a selected object used in chat.
+- Ask the user to click "Add to conversation" when they want a selected object used in chat.
 - If image context is missing, call get-museum-object with {"objectId": <id>, "returnImage": true}.`,
       }],
       structuredContent: {

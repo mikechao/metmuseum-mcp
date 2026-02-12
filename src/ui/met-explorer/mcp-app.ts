@@ -44,6 +44,7 @@ interface AppState {
   departmentsLoaded: boolean;
   pendingLaunchSearchSignature: string | null;
   lastLaunchSearchSignature: string | null;
+  lastResultsContextSignature: string | null;
 }
 
 interface SearchRequest {
@@ -77,6 +78,30 @@ interface ParsedSearchResult {
 interface HydrationResult {
   cards: ResultCard[];
   failedCount: number;
+}
+
+interface SearchResultsContextPayload {
+  source: 'met-explorer-app';
+  type: 'visible-results-page';
+  query: string;
+  hasImages: boolean;
+  titleOnly: boolean;
+  departmentId: number | null;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalResults: number;
+  results: Array<{
+    objectID: number;
+    title: string;
+    artistDisplayName: string;
+    department: string;
+  }>;
+}
+
+interface OpenAIWidgetApi {
+  widgetState?: unknown;
+  setWidgetState: (nextState: unknown) => void;
 }
 
 // ============================================================================
@@ -113,6 +138,7 @@ const state: AppState = {
   departmentsLoaded: false,
   pendingLaunchSearchSignature: null,
   lastLaunchSearchSignature: null,
+  lastResultsContextSignature: null,
 };
 
 // ============================================================================
@@ -845,20 +871,160 @@ function buildSearchResultsContextText(): string | null {
   ].join('\n');
 }
 
-async function syncSearchResultsToModelContext(): Promise<void> {
-  const text = buildSearchResultsContextText();
-  if (!text) {
-    return;
+function buildSearchResultsStructuredPayload(): SearchResultsContextPayload | null {
+  if (!state.searchRequest || !state.results.length) {
+    return null;
+  }
+
+  return {
+    source: 'met-explorer-app',
+    type: 'visible-results-page',
+    query: state.searchRequest.q,
+    hasImages: state.searchRequest.hasImages,
+    titleOnly: state.searchRequest.title,
+    departmentId: state.searchRequest.departmentId ?? null,
+    page: state.currentPage,
+    pageSize: state.pageSize,
+    totalPages: Math.max(state.totalPages, 1),
+    totalResults: state.totalResults,
+    results: state.results.map(result => ({
+      objectID: result.objectID,
+      title: result.title,
+      artistDisplayName: result.artistDisplayName,
+      department: result.department,
+    })),
+  };
+}
+
+function getSearchResultsContextSignature(text: string): string {
+  return `${state.searchRequest?.q ?? ''}|${state.currentPage}|${text}`;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function getOpenAIWidgetApi(): OpenAIWidgetApi | null {
+  const candidate = (window as Window & { openai?: unknown }).openai;
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const api = candidate as Partial<OpenAIWidgetApi>;
+  if (typeof api.setWidgetState !== 'function') {
+    return null;
+  }
+
+  return api as OpenAIWidgetApi;
+}
+
+function syncResultsToOpenAIWidgetState(
+  openAIWidget: OpenAIWidgetApi,
+  text: string,
+  structuredContent: SearchResultsContextPayload,
+  signature: string,
+): void {
+  const currentWidgetState = asRecord(openAIWidget.widgetState);
+  const currentPrivateContent = asRecord(currentWidgetState.privateContent);
+
+  openAIWidget.setWidgetState({
+    ...currentWidgetState,
+    modelContent: {
+      source: 'met-explorer-app',
+      type: 'visible-results-page',
+      summary: text,
+      visibleResults: structuredContent,
+    },
+    privateContent: {
+      ...currentPrivateContent,
+      metExplorer: {
+        signature,
+        visibleResults: structuredContent,
+        updatedAt: new Date().toISOString(),
+      },
+    },
+  });
+}
+
+async function trySyncSearchResultsContext(
+  text: string,
+  structuredContent: SearchResultsContextPayload,
+): Promise<boolean> {
+  try {
+    await app.updateModelContext({
+      content: [{ type: 'text', text }],
+      structuredContent,
+    });
+    return true;
+  }
+  catch {
+    // Retry with plain text only for hosts that reject structured content.
   }
 
   try {
     await app.updateModelContext({
       content: [{ type: 'text', text }],
     });
+    return true;
+  }
+  catch {
+    // Retry with structured only for hosts that reject text blocks.
+  }
+
+  try {
+    await app.updateModelContext({
+      structuredContent,
+    });
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+async function syncSearchResultsToModelContext(): Promise<void> {
+  const text = buildSearchResultsContextText();
+  const structuredContent = buildSearchResultsStructuredPayload();
+  if (!text || !structuredContent) {
+    return;
+  }
+
+  const signature = getSearchResultsContextSignature(text);
+  if (signature === state.lastResultsContextSignature) {
+    return;
+  }
+
+  const openAIWidget = getOpenAIWidgetApi();
+  if (openAIWidget) {
+    try {
+      // OpenAI-hosted clients expose window.openai.setWidgetState().
+      // When available, we prefer that channel for visible-results sync because
+      // it is reliably consumed by the model for widget-scoped state.
+      // Non-OpenAI hosts (or failures here) fall back to updateModelContext below.
+      syncResultsToOpenAIWidgetState(openAIWidget, text, structuredContent, signature);
+      state.lastResultsContextSignature = signature;
+      return;
+    }
+    catch (error) {
+      console.warn('Failed to sync search results via openai widgetState:', error);
+    }
+  }
+
+  try {
+    const synced = await trySyncSearchResultsContext(text, structuredContent);
+    if (synced) {
+      state.lastResultsContextSignature = signature;
+    }
+    else {
+      console.warn('Failed to sync search results via updateModelContext.');
+    }
   }
   catch (error) {
-    // Avoid interrupting browsing flow when context updates are unavailable.
-    console.warn('Failed to sync search results to model context:', error);
+    console.warn('Failed to sync search results via updateModelContext:', error);
   }
 }
 
