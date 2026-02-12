@@ -2,6 +2,7 @@ import type { ToolInputParams, ToolResult } from '../shared/types.js';
 import type { AppState, LaunchParams } from './state.js';
 import type { ResultCard, SearchRequest } from './types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
+import { OBJECT_HYDRATION_CONCURRENCY } from '../../constants.js';
 import {
   applyContext,
   errorToMessage,
@@ -400,7 +401,7 @@ async function hydrateObjects(objectIds: number[], token: number): Promise<Hydra
 
   await runWithConcurrency(
     objectIds.map((objectId, index) => ({ objectId, index })),
-    4,
+    OBJECT_HYDRATION_CONCURRENCY,
     async ({ objectId, index }: { objectId: number; index: number }) => {
       if (token !== state.latestSearchToken) {
         return;

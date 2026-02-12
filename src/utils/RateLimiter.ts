@@ -1,10 +1,12 @@
+import { MET_API_RATE_LIMIT_PER_SECOND } from '../constants.js';
+
 class RateLimiter {
   private requestsThisSecond: number = 0;
   private lastRequestTime: number = Date.now();
   private maxRequestsPerSecond: number;
   private pending: Promise<void> = Promise.resolve();
 
-  constructor(maxRequestsPerSecond: number) {
+  constructor(maxRequestsPerSecond: number = MET_API_RATE_LIMIT_PER_SECOND) {
     this.maxRequestsPerSecond = maxRequestsPerSecond;
   }
 
@@ -47,4 +49,4 @@ class RateLimiter {
 }
 
 // Create and export a singleton instance for Met Museum API
-export const metMuseumRateLimiter = new RateLimiter(80);
+export const metMuseumRateLimiter = new RateLimiter();

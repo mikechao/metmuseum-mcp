@@ -1,5 +1,6 @@
 import type { ObjectData } from '../shared/types.js';
 import type { ResultCard, SearchRequest } from './types.js';
+import { DEFAULT_SEARCH_PAGE_SIZE } from '../../constants.js';
 
 export interface LaunchParams {
   q?: string;
@@ -37,7 +38,7 @@ export interface AppState {
   lastResultsContextSignature: string | null;
 }
 
-export const DEFAULT_PAGE_SIZE = 12;
+export const DEFAULT_PAGE_SIZE = DEFAULT_SEARCH_PAGE_SIZE;
 
 export function createInitialState(): AppState {
   return {

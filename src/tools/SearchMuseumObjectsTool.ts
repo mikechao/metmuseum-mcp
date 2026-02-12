@@ -1,6 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import z from 'zod';
+import { DEFAULT_SEARCH_PAGE_SIZE, MAX_SEARCH_PAGE_SIZE } from '../constants.js';
 
 export const SearchInputSchema = z.object({
   q: z.string().describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
@@ -16,7 +17,7 @@ export const SearchInputSchema = z.object({
   dateBegin: z.number().int().optional().describe(`Restricts search to objects with an object date on or after this year`),
   dateEnd: z.number().int().optional().describe(`Restricts search to objects with an object date on or before this year`),
   page: z.number().int().positive().optional().default(1).describe(`1-based page number for paginated object IDs`),
-  pageSize: z.number().int().positive().max(100).optional().default(24).describe(`Number of object IDs to return per page (max 100)`),
+  pageSize: z.number().int().positive().max(MAX_SEARCH_PAGE_SIZE).optional().default(DEFAULT_SEARCH_PAGE_SIZE).describe(`Number of object IDs to return per page (max ${MAX_SEARCH_PAGE_SIZE})`),
 });
 
 /**

@@ -1,13 +1,12 @@
 import type z from 'zod';
 import process from 'node:process';
+import { DEFAULT_MET_API_TIMEOUT_MS } from '../constants.js';
 import {
   DepartmentsSchema,
   ObjectResponseSchema,
   SearchResponseSchema,
 } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
-
-const DEFAULT_MET_API_TIMEOUT_MS = 10_000;
 
 function normalizeNulls<T>(value: T): T {
   if (value === null) {
