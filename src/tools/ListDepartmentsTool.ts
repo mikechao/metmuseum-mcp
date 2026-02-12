@@ -1,6 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import z from 'zod';
+import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 
 export class ListDepartmentsTool {
   public readonly name: string = 'list-departments';
@@ -29,8 +30,11 @@ export class ListDepartmentsTool {
     }
     catch (error) {
       console.error('Error listing departments:', error);
+      const message = error instanceof MetMuseumApiError && error.isUserFriendly
+        ? error.message
+        : `Error listing departments: ${error}`;
       return {
-        content: [{ type: 'text', text: `Error listing departments: ${error}` }],
+        content: [{ type: 'text', text: message }],
         isError: true,
       };
     }

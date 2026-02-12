@@ -42,11 +42,13 @@ function getMetApiTimeoutMs(): number {
 
 export class MetMuseumApiError extends Error {
   public readonly status: number | undefined;
+  public readonly isUserFriendly: boolean;
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, isUserFriendly: boolean = false) {
     super(message);
     this.name = 'MetMuseumApiError';
     this.status = status;
+    this.isUserFriendly = isUserFriendly;
   }
 }
 
@@ -159,13 +161,38 @@ export class MetMuseumApiClient {
     }
     catch (error) {
       if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-        throw new MetMuseumApiError(`Met Museum API request timed out after ${this.requestTimeoutMs}ms`);
+        throw new MetMuseumApiError(
+          `The Met Museum API is taking too long to respond. Please try again.`,
+          undefined,
+          true, // isUserFriendly
+        );
+      }
+      // Network errors (DNS, connection refused, etc.)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new MetMuseumApiError(
+          `The Met Museum API is unreachable. Please check your internet connection and try again.`,
+          undefined,
+          true, // isUserFriendly
+        );
       }
       throw error;
     }
 
     if (!response.ok) {
-      throw new MetMuseumApiError(`HTTP error! status: ${response.status}`, response.status);
+      let userMessage = `The Met Museum API returned an error`;
+      if (response.status === 404) {
+        userMessage = 'The requested object or department was not found.';
+      }
+      else if (response.status === 429) {
+        userMessage = 'Too many requests to the Met Museum API. Please wait a moment and try again.';
+      }
+      else if (response.status >= 500) {
+        userMessage = 'The Met Museum API is experiencing issues. Please try again later.';
+      }
+      else if (response.status >= 400) {
+        userMessage = `The Met Museum API rejected the request (HTTP ${response.status}).`;
+      }
+      throw new MetMuseumApiError(userMessage, response.status, true);
     }
     return await response.json();
   }

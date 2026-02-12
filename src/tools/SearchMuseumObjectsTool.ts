@@ -1,6 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
 import z from 'zod';
+import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 import { DEFAULT_SEARCH_PAGE_SIZE, MAX_SEARCH_PAGE_SIZE } from '../constants.js';
 
 export const SearchInputSchema = z.object({
@@ -114,8 +115,11 @@ export class SearchMuseumObjectsTool {
     }
     catch (error) {
       console.error('Error searching museum objects:', error);
+      const message = error instanceof MetMuseumApiError && error.isUserFriendly
+        ? error.message
+        : `Error searching museum objects: ${error}`;
       return {
-        content: [{ type: 'text', text: `Error searching museum objects: ${error}` }],
+        content: [{ type: 'text', text: message }],
         isError: true,
       };
     }

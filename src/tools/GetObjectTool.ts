@@ -65,9 +65,14 @@ export class GetObjectTool {
       };
     }
     catch (error) {
-      if (error instanceof MetMuseumApiError && error.status === 404) {
+      if (error instanceof MetMuseumApiError) {
+        const message = error.isUserFriendly
+          ? error.message
+          : error.status === 404
+            ? `Museum object id ${objectId} was not found.`
+            : `Error getting museum object id ${objectId}: ${error.message}`;
         return {
-          content: [{ type: 'text', text: `Museum object id ${objectId} was not found.` }],
+          content: [{ type: 'text', text: message }],
           isError: true,
         };
       }
