@@ -71,6 +71,13 @@ function setupTools(
     {
       description: listDepartments.description,
       inputSchema: listDepartments.inputSchema.shape,
+      annotations: {
+        title: 'List Met Departments',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       _meta: {
         ui: {
           visibility: ['model', 'app'],
@@ -85,6 +92,13 @@ function setupTools(
     {
       description: search.description,
       inputSchema: search.inputSchema.shape,
+      annotations: {
+        title: 'Search Met Museum Objects',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       _meta: {
         ui: {
           visibility: ['model', 'app'],
@@ -99,6 +113,13 @@ function setupTools(
     {
       description: getMuseumObject.description,
       inputSchema: getMuseumObject.inputSchema.shape,
+      annotations: {
+        title: 'Get Met Museum Object',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       _meta: {
         ui: {
           resourceUri: getMuseumObjectAppResource.uri,
@@ -113,6 +134,13 @@ function setupTools(
     {
       description: openMetExplorer.description,
       inputSchema: openMetExplorer.inputSchema.shape,
+      annotations: {
+        title: 'Open Met Explorer',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       _meta: {
         ui: {
           resourceUri: openMetExplorer.resourceUri,
