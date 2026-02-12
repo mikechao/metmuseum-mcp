@@ -48,16 +48,19 @@ export async function startStreamableHttpServer(
   createServer: () => McpServer,
 ): Promise<void> {
   const port = Number.parseInt(process.env.PORT ?? '3001', 10);
-  const host = process.env.HOST ?? '0.0.0.0';
+  const host = process.env.HOST ?? '127.0.0.1';
   const allowedHostsEnv = process.env.ALLOWED_HOSTS;
+  const defaultAllowedHosts = ['localhost', '127.0.0.1'];
   const allowedHosts = allowedHostsEnv
-    ?.split(',')
-    .map(value => value.trim())
-    .filter(Boolean);
+    ? allowedHostsEnv
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+    : defaultAllowedHosts;
 
   const expressApp = createMcpExpressApp({
     host,
-    allowedHosts: allowedHosts?.length ? allowedHosts : undefined,
+    allowedHosts: allowedHosts.length ? allowedHosts : undefined,
   });
 
   expressApp.all('/mcp', async (
