@@ -33,7 +33,8 @@ class RateLimiter {
 
     // If we've hit our limit, wait until the next second
     if (this.requestsThisSecond >= this.maxRequestsPerSecond) {
-      console.error(`Rate limit of ${this.maxRequestsPerSecond} per second exceeded. Waiting for ${1000 - (now - this.lastRequestTime)}ms`);
+      // Note: Rate limiting is intentionally silent. Logging to stderr would leak
+      // implementation details to users in stdio mode.
       const timeToWait = 1000 - (now - this.lastRequestTime);
       if (timeToWait > 0) {
         await new Promise(resolve => setTimeout(resolve, timeToWait));
