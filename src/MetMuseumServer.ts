@@ -65,19 +65,31 @@ function setupTools(
   openMetExplorer: OpenMetExplorerTool,
   getMuseumObjectAppResource: GetMuseumObjectAppResource,
 ): void {
-  server.registerTool(
+  registerAppTool(
+    server,
     listDepartments.name,
     {
       description: listDepartments.description,
-      inputSchema: listDepartments.inputSchema,
+      inputSchema: listDepartments.inputSchema.shape,
+      _meta: {
+        ui: {
+          visibility: ['model', 'app'],
+        },
+      },
     },
     listDepartments.execute.bind(listDepartments),
   );
-  server.registerTool(
+  registerAppTool(
+    server,
     search.name,
     {
       description: search.description,
-      inputSchema: search.inputSchema,
+      inputSchema: search.inputSchema.shape,
+      _meta: {
+        ui: {
+          visibility: ['model', 'app'],
+        },
+      },
     },
     search.execute.bind(search),
   );
