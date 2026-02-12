@@ -1,5 +1,6 @@
 import type { ToolInputParams, ToolResult } from '../shared/types.js';
-import type { AppState, LaunchParams, ResultCard, SearchRequest } from './state.js';
+import type { AppState, LaunchParams } from './state.js';
+import type { ResultCard, SearchRequest } from './types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
 import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 import { syncSearchResultsToModelContext } from './context-sync.js';
@@ -337,7 +338,7 @@ async function loadSearchPage(page: number): Promise<void> {
         : baseMessage,
       false,
     );
-    state.lastResultsContextSignature = await syncSearchResultsToModelContext(app, state);
+    state.lastResultsContextSignature = await syncSearchResultsToModelContext(app, { state });
   }
   catch (error) {
     if (token !== state.latestSearchToken) {
@@ -456,7 +457,7 @@ async function runWithConcurrency<T>(
 
 function renderResults(): void {
   renderResultsView(
-    state,
+    { state },
     { resultsEl, detailsEl },
     {
       loadObjectDetails,
@@ -506,7 +507,7 @@ async function loadObjectDetails(objectId: number): Promise<void> {
 
 function renderDetails(): void {
   renderDetailsView(
-    state,
+    { state },
     { resultsEl, detailsEl },
     {
       loadObjectDetails,

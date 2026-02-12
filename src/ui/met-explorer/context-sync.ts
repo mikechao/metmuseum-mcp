@@ -1,18 +1,5 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-
-interface SearchResultContextItem {
-  objectID: number;
-  title: string;
-  artistDisplayName: string;
-  department: string;
-}
-
-interface SearchRequestContext {
-  q: string;
-  hasImages: boolean;
-  title: boolean;
-  departmentId?: number;
-}
+import type { AppState } from './state.js';
 
 interface SearchResultsContextPayload {
   source: 'met-explorer-app';
@@ -25,7 +12,12 @@ interface SearchResultsContextPayload {
   pageSize: number;
   totalPages: number;
   totalResults: number;
-  results: SearchResultContextItem[];
+  results: Array<{
+    objectID: number;
+    title: string;
+    artistDisplayName: string;
+    department: string;
+  }>;
 }
 
 interface OpenAIWidgetApi {
@@ -34,23 +26,26 @@ interface OpenAIWidgetApi {
 }
 
 export interface SearchResultsContextSyncState {
-  searchRequest: SearchRequestContext | null;
-  results: SearchResultContextItem[];
-  currentPage: number;
-  totalPages: number;
-  totalResults: number;
-  pageSize: number;
-  lastResultsContextSignature: string | null;
+  state: Pick<
+    AppState,
+    | 'searchRequest'
+    | 'results'
+    | 'currentPage'
+    | 'totalPages'
+    | 'totalResults'
+    | 'pageSize'
+    | 'lastResultsContextSignature'
+  >;
 }
 
 function buildSearchResultsContextText(state: SearchResultsContextSyncState): string | null {
-  if (!state.searchRequest || !state.results.length) {
+  if (!state.state.searchRequest || !state.state.results.length) {
     return null;
   }
 
-  const queryLine = `Query: "${state.searchRequest.q}"`;
-  const pageLine = `Page: ${state.currentPage}/${Math.max(state.totalPages, 1)} (${state.totalResults} total results)`;
-  const resultLines = state.results
+  const queryLine = `Query: "${state.state.searchRequest.q}"`;
+  const pageLine = `Page: ${state.state.currentPage}/${Math.max(state.state.totalPages, 1)} (${state.state.totalResults} total results)`;
+  const resultLines = state.state.results
     .map(result => `- ${result.objectID} | ${result.title} | ${result.artistDisplayName}`)
     .join('\n');
 
@@ -67,22 +62,22 @@ function buildSearchResultsContextText(state: SearchResultsContextSyncState): st
 function buildSearchResultsStructuredPayload(
   state: SearchResultsContextSyncState,
 ): SearchResultsContextPayload | null {
-  if (!state.searchRequest || !state.results.length) {
+  if (!state.state.searchRequest || !state.state.results.length) {
     return null;
   }
 
   return {
     source: 'met-explorer-app',
     type: 'visible-results-page',
-    query: state.searchRequest.q,
-    hasImages: state.searchRequest.hasImages,
-    titleOnly: state.searchRequest.title,
-    departmentId: state.searchRequest.departmentId ?? null,
-    page: state.currentPage,
-    pageSize: state.pageSize,
-    totalPages: Math.max(state.totalPages, 1),
-    totalResults: state.totalResults,
-    results: state.results.map(result => ({
+    query: state.state.searchRequest.q,
+    hasImages: state.state.searchRequest.hasImages,
+    titleOnly: state.state.searchRequest.title,
+    departmentId: state.state.searchRequest.departmentId ?? null,
+    page: state.state.currentPage,
+    pageSize: state.state.pageSize,
+    totalPages: Math.max(state.state.totalPages, 1),
+    totalResults: state.state.totalResults,
+    results: state.state.results.map(result => ({
       objectID: result.objectID,
       title: result.title,
       artistDisplayName: result.artistDisplayName,
@@ -95,7 +90,7 @@ function getSearchResultsContextSignature(
   state: SearchResultsContextSyncState,
   text: string,
 ): string {
-  return `${state.searchRequest?.q ?? ''}|${state.currentPage}|${text}`;
+  return `${state.state.searchRequest?.q ?? ''}|${state.state.currentPage}|${text}`;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -192,12 +187,12 @@ export async function syncSearchResultsToModelContext(
   const text = buildSearchResultsContextText(state);
   const structuredContent = buildSearchResultsStructuredPayload(state);
   if (!text || !structuredContent) {
-    return state.lastResultsContextSignature;
+    return state.state.lastResultsContextSignature;
   }
 
   const signature = getSearchResultsContextSignature(state, text);
-  if (signature === state.lastResultsContextSignature) {
-    return state.lastResultsContextSignature;
+  if (signature === state.state.lastResultsContextSignature) {
+    return state.state.lastResultsContextSignature;
   }
 
   const openAIWidget = getOpenAIWidgetApi();
@@ -221,10 +216,10 @@ export async function syncSearchResultsToModelContext(
       return signature;
     }
     console.warn('Failed to sync search results via updateModelContext.');
-    return state.lastResultsContextSignature;
+    return state.state.lastResultsContextSignature;
   }
   catch (error) {
     console.warn('Failed to sync search results via updateModelContext:', error);
-    return state.lastResultsContextSignature;
+    return state.state.lastResultsContextSignature;
   }
 }

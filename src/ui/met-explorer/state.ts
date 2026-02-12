@@ -1,4 +1,5 @@
 import type { ObjectData } from '../shared/types.js';
+import type { ResultCard, SearchRequest } from './types.js';
 
 export interface LaunchParams {
   q?: string;
@@ -7,20 +8,7 @@ export interface LaunchParams {
   departmentId?: number;
 }
 
-export interface SearchRequest {
-  q: string;
-  hasImages: boolean;
-  title: boolean;
-  departmentId?: number;
-}
-
-export interface ResultCard {
-  objectID: number;
-  title: string;
-  artistDisplayName: string;
-  department: string;
-  primaryImageSmall: string;
-}
+export type { ResultCard, SearchRequest } from './types.js';
 
 export interface AppState {
   launch: LaunchParams;

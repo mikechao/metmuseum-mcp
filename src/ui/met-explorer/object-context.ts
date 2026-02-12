@@ -7,6 +7,20 @@ interface StatusCallback {
   setStatus: (message: string, isError: boolean) => void;
 }
 
+type AddContextButtonState = Pick<
+  AppState,
+  'selectedObject' | 'lastAddedContextObjectId' | 'isAddingToContext'
+>;
+
+type AddSelectedObjectToContextState = Pick<
+  AppState,
+  | 'selectedObject'
+  | 'isAddingToContext'
+  | 'selectedImageData'
+  | 'selectedImageMimeType'
+  | 'lastAddedContextObjectId'
+>;
+
 export function getObjectContextId(objectData: ObjectData | null): string | null {
   if (!objectData) {
     return null;
@@ -22,7 +36,7 @@ export function getObjectContextId(objectData: ObjectData | null): string | null
 }
 
 export function updateAddContextButton(
-  state: AppState,
+  state: AddContextButtonState,
   addContextBtn: HTMLButtonElement,
 ): void {
   const selectedObjectId = getObjectContextId(state.selectedObject);
@@ -99,7 +113,7 @@ function parseObjectId(objectData: ObjectData): number | null {
 
 async function sendToolCallMessageForImageContext(
   app: App,
-  state: AppState,
+  state: AddSelectedObjectToContextState,
   objectData: ObjectData,
   objectDetailsText: string,
 ): Promise<boolean> {
@@ -131,7 +145,7 @@ async function sendToolCallMessageForImageContext(
 
 export async function addSelectedObjectToContext(
   app: App,
-  state: AppState,
+  state: AddSelectedObjectToContextState,
   addContextBtn: HTMLButtonElement,
   callbacks: StatusCallback,
 ): Promise<void> {

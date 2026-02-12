@@ -1,30 +1,18 @@
-import type { ObjectData } from '../shared/types.js';
+import type { AppState } from './state.js';
 import { errorToMessage, stringOrFallback } from '../shared/utils.js';
 
-interface ResultCard {
-  objectID: number;
-  title: string;
-  artistDisplayName: string;
-  department: string;
-  primaryImageSmall: string;
-}
-
-interface SearchRequest {
-  q: string;
-  hasImages: boolean;
-  title: boolean;
-  departmentId?: number;
-}
-
 export interface RenderState {
-  results: ResultCard[];
-  searchRequest: SearchRequest | null;
-  selectedObject: ObjectData | null;
-  selectedImageData: string | null;
-  selectedImageMimeType: string | null;
-  isImageExpanded: boolean;
-  isResultsLoading: boolean;
-  isDetailsLoading: boolean;
+  state: Pick<
+    AppState,
+    | 'results'
+    | 'searchRequest'
+    | 'selectedObject'
+    | 'selectedImageData'
+    | 'selectedImageMimeType'
+    | 'isImageExpanded'
+    | 'isResultsLoading'
+    | 'isDetailsLoading'
+  >;
 }
 
 export interface RenderElements {
@@ -39,10 +27,11 @@ export interface RenderCallbacks {
 }
 
 export function renderResults(
-  state: RenderState,
+  renderState: RenderState,
   elements: RenderElements,
   callbacks: RenderCallbacks,
 ): void {
+  const { state } = renderState;
   const { resultsEl } = elements;
   resultsEl.innerHTML = '';
   resultsEl.setAttribute('aria-busy', state.isResultsLoading || state.isDetailsLoading ? 'true' : 'false');
@@ -143,10 +132,11 @@ export function renderResults(
 }
 
 export function renderDetails(
-  state: RenderState,
+  renderState: RenderState,
   elements: RenderElements,
   callbacks: RenderCallbacks,
 ): void {
+  const { state } = renderState;
   const { detailsEl } = elements;
   detailsEl.innerHTML = '';
 
@@ -246,7 +236,10 @@ function appendDetailRow(
   table.append(row);
 }
 
-function getSelectedImageUrl(state: RenderState, objectData: ObjectData): string | null {
+function getSelectedImageUrl(
+  state: RenderState['state'],
+  objectData: NonNullable<RenderState['state']['selectedObject']>,
+): string | null {
   if (state.selectedImageData && state.selectedImageMimeType) {
     return `data:${state.selectedImageMimeType};base64,${state.selectedImageData}`;
   }
