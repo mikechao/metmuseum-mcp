@@ -1,10 +1,13 @@
 import type z from 'zod';
+import process from 'node:process';
 import {
   DepartmentsSchema,
   ObjectResponseSchema,
   SearchResponseSchema,
 } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
+
+const DEFAULT_MET_API_TIMEOUT_MS = 10_000;
 
 function normalizeNulls<T>(value: T): T {
   if (value === null) {
@@ -21,6 +24,23 @@ function normalizeNulls<T>(value: T): T {
   return value;
 }
 
+function getMetApiTimeoutMs(): number {
+  const rawTimeout = process.env.MET_API_TIMEOUT_MS;
+  if (!rawTimeout) {
+    return DEFAULT_MET_API_TIMEOUT_MS;
+  }
+
+  const parsedTimeout = Number.parseInt(rawTimeout, 10);
+  if (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0) {
+    console.warn(
+      `Invalid MET_API_TIMEOUT_MS value "${rawTimeout}". Using default ${DEFAULT_MET_API_TIMEOUT_MS}ms.`,
+    );
+    return DEFAULT_MET_API_TIMEOUT_MS;
+  }
+
+  return parsedTimeout;
+}
+
 export class MetMuseumApiError extends Error {
   public readonly status: number | undefined;
 
@@ -35,6 +55,7 @@ export class MetMuseumApiClient {
   private readonly departmentsUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/departments';
   private readonly searchUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/search';
   private readonly objectBaseUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/objects/';
+  private readonly requestTimeoutMs: number = getMetApiTimeoutMs();
 
   public async listDepartments(): Promise<z.infer<typeof DepartmentsSchema>['departments']> {
     const data = await this.fetchAndParse(this.departmentsUrl, DepartmentsSchema, 'departments');
@@ -131,7 +152,19 @@ export class MetMuseumApiClient {
   }
 
   private async fetchJson(url: string): Promise<unknown> {
-    const response = await metMuseumRateLimiter.fetch(url);
+    let response: Response;
+    try {
+      response = await metMuseumRateLimiter.fetch(url, {
+        signal: AbortSignal.timeout(this.requestTimeoutMs),
+      });
+    }
+    catch (error) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+        throw new MetMuseumApiError(`Met Museum API request timed out after ${this.requestTimeoutMs}ms`);
+      }
+      throw error;
+    }
+
     if (!response.ok) {
       throw new MetMuseumApiError(`HTTP error! status: ${response.status}`, response.status);
     }

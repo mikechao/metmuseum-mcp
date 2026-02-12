@@ -117,13 +117,14 @@ The server listens on:
 http://localhost:3001/mcp
 ```
 
-You can control HTTP transport behavior with environment variables:
+You can control server behavior with environment variables:
 
-| Variable        | Default               | Description                                                                                               |
-| --------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `PORT`          | `3001`                | HTTP port used by the Streamable HTTP server.                                                             |
-| `HOST`          | `127.0.0.1`           | Network interface the HTTP server binds to.                                                               |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated host allowlist for host header validation (example: `localhost,127.0.0.1,my-domain.com`). |
+| Variable             | Default               | Description                                                                                               |
+| -------------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `PORT`               | `3001`                | HTTP port used by the Streamable HTTP server.                                                             |
+| `HOST`               | `127.0.0.1`           | Network interface the HTTP server binds to.                                                               |
+| `ALLOWED_HOSTS`      | `localhost,127.0.0.1` | Comma-separated host allowlist for host header validation (example: `localhost,127.0.0.1,my-domain.com`). |
+| `MET_API_TIMEOUT_MS` | `10000`               | Timeout in milliseconds for outbound requests to the Met Collection API.                                  |
 
 Example:
 
