@@ -3,6 +3,7 @@ import { App } from '@modelcontextprotocol/ext-apps';
 import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 import { syncSearchResultsToModelContext } from './context-sync.js';
 import { getStructuredValue, parseDepartments, parseSearchResult } from './parsers.js';
+import { renderDetails as renderDetailsView, renderResults as renderResultsView } from './render.js';
 
 /**
  * Met Explorer MCP App - TypeScript Entry Point
@@ -523,102 +524,15 @@ async function runWithConcurrency<T>(
 // ============================================================================
 
 function renderResults(): void {
-  resultsEl.innerHTML = '';
-  resultsEl.setAttribute('aria-busy', state.isResultsLoading || state.isDetailsLoading ? 'true' : 'false');
-
-  if (state.isResultsLoading) {
-    const loading = document.createElement('div');
-    loading.className = 'results-loading';
-    loading.setAttribute('role', 'status');
-    loading.setAttribute('aria-live', 'polite');
-
-    const spinner = document.createElement('div');
-    spinner.className = 'spinner';
-    spinner.setAttribute('aria-hidden', 'true');
-
-    const text = document.createElement('span');
-    text.textContent = 'Loading results...';
-
-    loading.append(spinner, text);
-    resultsEl.append(loading);
-    return;
-  }
-
-  if (!state.results.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty';
-    empty.textContent = state.searchRequest
-      ? 'No objects found for this search.'
-      : 'Run a search to explore objects.';
-    resultsEl.append(empty);
-    return;
-  }
-
-  for (const result of state.results) {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = `result-card${objectIdEquals(state.selectedObject?.objectID, result.objectID) ? ' active' : ''}`;
-    card.disabled = state.isDetailsLoading;
-    card.addEventListener('click', () => {
-      if (state.isDetailsLoading) {
-        return;
-      }
-      loadObjectDetails(result.objectID).catch((error: unknown) => {
-        setStatus(errorToMessage(error), true);
-      });
-    });
-
-    if (result.primaryImageSmall) {
-      const img = document.createElement('img');
-      img.src = result.primaryImageSmall;
-      img.alt = result.title;
-      card.append(img);
-    }
-    else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'skeleton';
-      placeholder.style.height = '150px';
-      card.append(placeholder);
-    }
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.textContent = result.title;
-    title.title = result.title;
-    card.title = result.title;
-
-    const sub = document.createElement('div');
-    sub.className = 'sub';
-    sub.textContent = result.artistDisplayName;
-
-    const sub2 = document.createElement('div');
-    sub2.className = 'sub';
-    sub2.textContent = result.department;
-
-    meta.append(title, sub, sub2);
-    card.append(meta);
-    resultsEl.append(card);
-  }
-
-  if (state.isDetailsLoading) {
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.className = 'results-details-loading';
-    loadingOverlay.setAttribute('role', 'status');
-    loadingOverlay.setAttribute('aria-live', 'polite');
-
-    const spinner = document.createElement('div');
-    spinner.className = 'spinner';
-    spinner.setAttribute('aria-hidden', 'true');
-
-    const text = document.createElement('span');
-    text.textContent = 'Loading details...';
-
-    loadingOverlay.append(spinner, text);
-    resultsEl.append(loadingOverlay);
-  }
+  renderResultsView(
+    state,
+    { resultsEl, detailsEl },
+    {
+      loadObjectDetails,
+      setStatus,
+      updateAddContextButton,
+    },
+  );
 }
 
 async function loadObjectDetails(objectId: number): Promise<void> {
@@ -660,88 +574,15 @@ async function loadObjectDetails(objectId: number): Promise<void> {
 }
 
 function renderDetails(): void {
-  detailsEl.innerHTML = '';
-
-  if (!state.selectedObject) {
-    const empty = document.createElement('div');
-    empty.className = 'empty';
-    empty.textContent = 'Select an object to see details.';
-    detailsEl.append(empty);
-    updateAddContextButton();
-    return;
-  }
-
-  updateAddContextButton();
-
-  const objectData = state.selectedObject;
-  const imageUrl = getSelectedImageUrl(objectData);
-
-  if (imageUrl) {
-    const imageWrap = document.createElement('div');
-    imageWrap.className = 'detail-image-wrap';
-
-    const image = document.createElement('img');
-    image.className = 'detail-image';
-    image.classList.toggle('expanded', state.isImageExpanded);
-    image.alt = stringOrFallback(objectData.title, 'Artwork image');
-    image.src = imageUrl;
-
-    const viewFullButton = document.createElement('button');
-    viewFullButton.type = 'button';
-    viewFullButton.className = 'image-view-btn';
-    viewFullButton.textContent = state.isImageExpanded ? 'Collapse image' : 'Expand image';
-    viewFullButton.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
-    viewFullButton.addEventListener('click', () => {
-      state.isImageExpanded = !state.isImageExpanded;
-      image.classList.toggle('expanded', state.isImageExpanded);
-      viewFullButton.textContent = state.isImageExpanded ? 'Collapse image' : 'Expand image';
-      viewFullButton.setAttribute('aria-expanded', state.isImageExpanded ? 'true' : 'false');
-    });
-
-    const imageActions = document.createElement('div');
-    imageActions.className = 'detail-image-actions';
-    imageActions.append(viewFullButton);
-
-    imageWrap.append(image, imageActions);
-    detailsEl.append(imageWrap);
-  }
-
-  const title = document.createElement('h2');
-  title.className = 'detail-title';
-  title.textContent = stringOrFallback(objectData.title, 'Untitled');
-  detailsEl.append(title);
-
-  const table = document.createElement('dl');
-  table.className = 'detail-meta';
-
-  appendDetailRow(table, 'Object ID', objectData.objectID);
-  appendDetailRow(table, 'Artist', objectData.artistDisplayName);
-  appendDetailRow(table, 'Artist Bio', objectData.artistDisplayBio);
-  appendDetailRow(table, 'Department', objectData.department);
-  appendDetailRow(table, 'Date', objectData.objectDate);
-  appendDetailRow(table, 'Medium', objectData.medium);
-  appendDetailRow(table, 'Dimensions', objectData.dimensions);
-  appendDetailRow(table, 'Credit Line', objectData.creditLine);
-
-  const tagText = Array.isArray(objectData.tags)
-    ? objectData.tags
-        .map(tag => tag?.term)
-        .filter(Boolean)
-        .join(', ')
-    : '';
-  appendDetailRow(table, 'Tags', tagText);
-
-  detailsEl.append(table);
-}
-
-function getSelectedImageUrl(objectData: ObjectData): string | null {
-  if (state.selectedImageData && state.selectedImageMimeType) {
-    return `data:${state.selectedImageMimeType};base64,${state.selectedImageData}`;
-  }
-  if (objectData.primaryImage) {
-    return objectData.primaryImage;
-  }
-  return null;
+  renderDetailsView(
+    state,
+    { resultsEl, detailsEl },
+    {
+      loadObjectDetails,
+      setStatus,
+      updateAddContextButton,
+    },
+  );
 }
 
 function getObjectContextId(objectData: ObjectData | null): string | null {
@@ -984,30 +825,6 @@ async function addSelectedObjectToContext(): Promise<void> {
   }
 }
 
-function appendDetailRow(
-  table: HTMLDListElement,
-  key: string,
-  value: string | number | undefined,
-): void {
-  if (!value) {
-    return;
-  }
-
-  const row = document.createElement('div');
-  row.className = 'detail-row';
-
-  const keyEl = document.createElement('dt');
-  keyEl.className = 'detail-key';
-  keyEl.textContent = key;
-
-  const valueEl = document.createElement('dd');
-  valueEl.className = 'detail-value';
-  valueEl.textContent = String(value);
-
-  row.append(keyEl, valueEl);
-  table.append(row);
-}
-
 // ============================================================================
 // Tool Calls
 // ============================================================================
@@ -1052,16 +869,6 @@ function updatePagination(): void {
 function setStatus(message: string, isError: boolean): void {
   statusEl.textContent = message;
   statusEl.className = isError ? 'status error' : 'status';
-}
-
-function objectIdEquals(
-  left: number | string | undefined,
-  right: number | string | undefined,
-): boolean {
-  if (left === undefined || right === undefined) {
-    return false;
-  }
-  return String(left) === String(right);
 }
 
 // ============================================================================
