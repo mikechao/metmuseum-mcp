@@ -2,7 +2,16 @@ import type { ToolInputParams, ToolResult } from '../shared/types.js';
 import type { AppState, LaunchParams } from './state.js';
 import type { ResultCard, SearchRequest } from './types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
-import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
+import {
+  applyContext,
+  errorToMessage,
+  extractText,
+  getElementById,
+  getImageContent,
+  parseObjectResult,
+  startHeightSync,
+  stringOrFallback,
+} from '../shared/utils.js';
 import { syncSearchResultsToModelContext } from './context-sync.js';
 import {
   addSelectedObjectToContext as addSelectedObjectToContextAction,
@@ -43,24 +52,24 @@ const state: AppState = createInitialState();
 // DOM Elements
 // ============================================================================
 
-const queryInput = document.getElementById('query') as HTMLInputElement;
-const departmentSelect = document.getElementById('department') as HTMLSelectElement;
-const hasImagesInput = document.getElementById('has-images') as HTMLInputElement;
-const titleOnlyInput = document.getElementById('title-only') as HTMLInputElement;
-const searchButton = document.getElementById('search-btn') as HTMLButtonElement;
-const searchForm = document.getElementById('search-form') as HTMLFormElement;
-const statusEl = document.getElementById('status') as HTMLDivElement;
-const resultsPanelEl = document.getElementById('results-panel') as HTMLElement;
-const resultsTitleEl = document.getElementById('results-title') as HTMLDivElement;
-const resultsEl = document.getElementById('results') as HTMLDivElement;
-const resultsPaginationEl = document.getElementById('results-pagination') as HTMLDivElement;
-const prevPageButton = document.getElementById('prev-page') as HTMLButtonElement;
-const nextPageButton = document.getElementById('next-page') as HTMLButtonElement;
-const pageInfoEl = document.getElementById('page-info') as HTMLDivElement;
-const detailPanelEl = document.getElementById('detail-panel') as HTMLElement;
-const detailsEl = document.getElementById('details') as HTMLDivElement;
-const backToResultsBtn = document.getElementById('back-to-results-btn') as HTMLButtonElement;
-const addContextBtn = document.getElementById('add-context-btn') as HTMLButtonElement;
+const queryInput = getElementById('query', HTMLInputElement);
+const departmentSelect = getElementById('department', HTMLSelectElement);
+const hasImagesInput = getElementById('has-images', HTMLInputElement);
+const titleOnlyInput = getElementById('title-only', HTMLInputElement);
+const searchButton = getElementById('search-btn', HTMLButtonElement);
+const searchForm = getElementById('search-form', HTMLFormElement);
+const statusEl = getElementById('status', HTMLDivElement);
+const resultsPanelEl = getElementById('results-panel', HTMLElement);
+const resultsTitleEl = getElementById('results-title', HTMLDivElement);
+const resultsEl = getElementById('results', HTMLDivElement);
+const resultsPaginationEl = getElementById('results-pagination', HTMLDivElement);
+const prevPageButton = getElementById('prev-page', HTMLButtonElement);
+const nextPageButton = getElementById('next-page', HTMLButtonElement);
+const pageInfoEl = getElementById('page-info', HTMLDivElement);
+const detailPanelEl = getElementById('detail-panel', HTMLElement);
+const detailsEl = getElementById('details', HTMLDivElement);
+const backToResultsBtn = getElementById('back-to-results-btn', HTMLButtonElement);
+const addContextBtn = getElementById('add-context-btn', HTMLButtonElement);
 const viewModeElements = { resultsPanelEl, detailPanelEl };
 const busyControls = {
   queryInput,

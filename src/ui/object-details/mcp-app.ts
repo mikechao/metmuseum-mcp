@@ -1,6 +1,15 @@
 import type { ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
-import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
+import {
+  applyContext,
+  errorToMessage,
+  extractText,
+  getElementById,
+  getImageContent,
+  parseObjectResult,
+  startHeightSync,
+  stringOrFallback,
+} from '../shared/utils.js';
 
 interface AppState {
   object: ObjectData | null;
@@ -16,17 +25,17 @@ const state: AppState = {
   errorMessage: null,
 };
 
-const titleEl = document.getElementById('title') as HTMLHeadingElement;
-const highlightsEl = document.getElementById('highlights') as HTMLUListElement;
-const metaDetailsEl = document.getElementById('meta-details') as HTMLDetailsElement;
-const metaSummaryEl = document.getElementById('meta-summary') as HTMLElement;
-const metaEl = document.getElementById('meta') as HTMLDListElement;
-const imageWrapEl = document.getElementById('image-wrap') as HTMLDivElement;
-const imageAmbientEl = document.getElementById('image-ambient') as HTMLDivElement;
-const imageEl = document.getElementById('object-image') as HTMLImageElement;
-const objectLinkEl = document.getElementById('object-link') as HTMLAnchorElement;
-const statusEl = document.getElementById('status') as HTMLDivElement;
-const emptyEl = document.getElementById('empty') as HTMLDivElement;
+const titleEl = getElementById('title', HTMLHeadingElement);
+const highlightsEl = getElementById('highlights', HTMLUListElement);
+const metaDetailsEl = getElementById('meta-details', HTMLDetailsElement);
+const metaSummaryEl = getElementById('meta-summary', HTMLElement);
+const metaEl = getElementById('meta', HTMLDListElement);
+const imageWrapEl = getElementById('image-wrap', HTMLDivElement);
+const imageAmbientEl = getElementById('image-ambient', HTMLDivElement);
+const imageEl = getElementById('object-image', HTMLImageElement);
+const objectLinkEl = getElementById('object-link', HTMLAnchorElement);
+const statusEl = getElementById('status', HTMLDivElement);
+const emptyEl = getElementById('empty', HTMLDivElement);
 
 // Hosts handle width differently; sync height only to avoid narrow-width lock-in.
 const app = new App({ name: 'met-object-details-app', version: '0.1.0' }, {}, { autoResize: false });

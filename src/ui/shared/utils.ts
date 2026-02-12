@@ -164,6 +164,50 @@ export function parseObjectResult(result: ToolResult): ObjectData | null {
 }
 
 // ============================================================================
+// DOM Utilities
+// ============================================================================
+
+/**
+ * Safely retrieves a DOM element by ID, throwing a clear error if not found.
+ * This prevents runtime crashes from unsafe type assertions like `as HTMLInputElement`.
+ *
+ * @throws {Error} If the element with the given ID is not found in the document
+ */
+export function getElementById<T extends HTMLElement>(
+  id: string,
+  expectedType: new (...args: unknown[]) => T,
+): T {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new TypeError(`Required DOM element not found: #${id}`);
+  }
+  if (!(element instanceof expectedType)) {
+    throw new TypeError(
+      `DOM element #${id} is not of expected type ${expectedType.name}; got ${element.constructor.name}`,
+    );
+  }
+  return element as T;
+}
+
+/**
+ * Safely retrieves a DOM element by ID, returning null if not found.
+ * Use this when the element's absence is acceptable (e.g., optional UI components).
+ */
+export function getElementByIdOrNull<T extends HTMLElement>(
+  id: string,
+  expectedType: new (...args: unknown[]) => T,
+): T | null {
+  const element = document.getElementById(id);
+  if (!element) {
+    return null;
+  }
+  if (!(element instanceof expectedType)) {
+    return null;
+  }
+  return element as T;
+}
+
+// ============================================================================
 // General Utilities
 // ============================================================================
 
