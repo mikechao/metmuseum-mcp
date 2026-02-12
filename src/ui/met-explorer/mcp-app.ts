@@ -1,9 +1,20 @@
 import type { ObjectData, ToolInputParams, ToolResult } from '../shared/types.js';
+import type { AppState, LaunchParams, ResultCard, SearchRequest } from './state.js';
 import { App } from '@modelcontextprotocol/ext-apps';
 import { applyContext, errorToMessage, extractText, getImageContent, parseObjectResult, startHeightSync, stringOrFallback } from '../shared/utils.js';
 import { syncSearchResultsToModelContext } from './context-sync.js';
 import { getStructuredValue, parseDepartments, parseSearchResult } from './parsers.js';
 import { renderDetails as renderDetailsView, renderResults as renderResultsView } from './render.js';
+import {
+  createInitialState,
+  DEFAULT_PAGE_SIZE,
+  getLaunchSearchSignature as getLaunchSearchSignatureFromState,
+  setBusy as setBusyState,
+  setStatus as setStatusState,
+  setViewMode as setViewModeState,
+  updatePagination as updatePaginationState,
+  updateResultsTitle as updateResultsTitleState,
+} from './state.js';
 
 /**
  * Met Explorer MCP App - TypeScript Entry Point
@@ -12,100 +23,16 @@ import { renderDetails as renderDetailsView, renderResults as renderResultsView 
  * of Art collection using the MCP Apps runtime.
  */
 
-// ============================================================================
-// Types
-// ============================================================================
-
-interface LaunchParams {
-  q?: string;
-  hasImages?: boolean;
-  title?: boolean;
-  departmentId?: number;
-}
-
-interface AppState {
-  launch: LaunchParams;
-  results: ResultCard[];
-  selectedObject: ObjectData | null;
-  selectedImageData: string | null;
-  selectedImageMimeType: string | null;
-  lastAddedContextObjectId: string | null;
-  isImageExpanded: boolean;
-  viewMode: 'results' | 'detail';
-  latestSearchToken: number;
-  latestDetailsToken: number;
-  searchRequest: SearchRequest | null;
-  currentPage: number;
-  totalResults: number;
-  totalPages: number;
-  pageSize: number;
-  isBusy: boolean;
-  isResultsLoading: boolean;
-  isDetailsLoading: boolean;
-  isAddingToContext: boolean;
-  isInitialized: boolean;
-  departmentsLoaded: boolean;
-  pendingLaunchSearchSignature: string | null;
-  lastLaunchSearchSignature: string | null;
-  lastResultsContextSignature: string | null;
-}
-
-interface SearchRequest {
-  q: string;
-  hasImages: boolean;
-  title: boolean;
-  departmentId?: number;
-}
-
-interface ResultCard {
-  objectID: number;
-  title: string;
-  artistDisplayName: string;
-  department: string;
-  primaryImageSmall: string;
-}
-
 interface HydrationResult {
   cards: ResultCard[];
   failedCount: number;
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const DEFAULT_PAGE_SIZE = 12;
-
-// ============================================================================
 // State
 // ============================================================================
 
-const state: AppState = {
-  launch: {},
-  results: [],
-  selectedObject: null,
-  selectedImageData: null,
-  selectedImageMimeType: null,
-  lastAddedContextObjectId: null,
-  isImageExpanded: false,
-  viewMode: 'results',
-  latestSearchToken: 0,
-  latestDetailsToken: 0,
-  searchRequest: null,
-  currentPage: 1,
-  totalResults: 0,
-  totalPages: 0,
-  pageSize: DEFAULT_PAGE_SIZE,
-  isBusy: false,
-  isResultsLoading: false,
-  isDetailsLoading: false,
-  isAddingToContext: false,
-  isInitialized: false,
-  departmentsLoaded: false,
-  pendingLaunchSearchSignature: null,
-  lastLaunchSearchSignature: null,
-  lastResultsContextSignature: null,
-};
+const state: AppState = createInitialState();
 
 // ============================================================================
 // DOM Elements
@@ -129,6 +56,20 @@ const detailPanelEl = document.getElementById('detail-panel') as HTMLElement;
 const detailsEl = document.getElementById('details') as HTMLDivElement;
 const backToResultsBtn = document.getElementById('back-to-results-btn') as HTMLButtonElement;
 const addContextBtn = document.getElementById('add-context-btn') as HTMLButtonElement;
+const viewModeElements = { resultsPanelEl, detailPanelEl };
+const busyControls = {
+  queryInput,
+  departmentSelect,
+  hasImagesInput,
+  titleOnlyInput,
+  searchButton,
+};
+const paginationElements = {
+  resultsPaginationEl,
+  pageInfoEl,
+  prevPageButton,
+  nextPageButton,
+};
 
 // ============================================================================
 // MCP Runtime Setup
@@ -226,9 +167,7 @@ async function init(): Promise<void> {
 }
 
 function setViewMode(mode: 'results' | 'detail'): void {
-  state.viewMode = mode;
-  resultsPanelEl.hidden = mode !== 'results';
-  detailPanelEl.hidden = mode !== 'detail';
+  setViewModeState(state, viewModeElements, mode);
 }
 
 // ============================================================================
@@ -434,19 +373,7 @@ async function maybeRunPendingLaunchSearch(): Promise<void> {
 }
 
 function getLaunchSearchSignature(): string | null {
-  const q = state.launch.q?.trim();
-  if (!q) {
-    return null;
-  }
-
-  const hasImages = Boolean(state.launch.hasImages);
-  const title = Boolean(state.launch.title);
-  const departmentId
-    = typeof state.launch.departmentId === 'number'
-      ? state.launch.departmentId
-      : null;
-
-  return [q, hasImages ? '1' : '0', title ? '1' : '0', departmentId ?? ''].join('|');
+  return getLaunchSearchSignatureFromState(state);
 }
 
 // ============================================================================
@@ -842,33 +769,19 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<To
 // ============================================================================
 
 function setBusy(isBusy: boolean): void {
-  state.isBusy = isBusy;
-  queryInput.disabled = isBusy;
-  departmentSelect.disabled = isBusy;
-  hasImagesInput.disabled = isBusy;
-  titleOnlyInput.disabled = isBusy;
-  searchButton.disabled = isBusy;
-  updatePagination();
+  setBusyState(state, busyControls, updatePagination, isBusy);
 }
 
 function updateResultsTitle(): void {
-  resultsTitleEl.textContent
-    = state.totalResults > 0 ? `Results (${state.totalResults} total)` : 'Results';
+  updateResultsTitleState(state, resultsTitleEl);
 }
 
 function updatePagination(): void {
-  const hasResults = state.totalResults > 0 && state.totalPages > 0;
-  resultsPaginationEl.style.display = hasResults ? 'flex' : 'none';
-  pageInfoEl.textContent = hasResults
-    ? `Page ${state.currentPage} of ${state.totalPages}`
-    : 'Page 0 of 0';
-  prevPageButton.disabled = !hasResults || state.isBusy || state.currentPage <= 1;
-  nextPageButton.disabled = !hasResults || state.isBusy || state.currentPage >= state.totalPages;
+  updatePaginationState(state, paginationElements);
 }
 
 function setStatus(message: string, isError: boolean): void {
-  statusEl.textContent = message;
-  statusEl.className = isError ? 'status error' : 'status';
+  setStatusState(statusEl, message, isError);
 }
 
 // ============================================================================
