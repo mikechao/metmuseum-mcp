@@ -31,9 +31,8 @@ function getMetApiTimeoutMs(): number {
 
   const parsedTimeout = Number.parseInt(rawTimeout, 10);
   if (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0) {
-    console.warn(
-      `Invalid MET_API_TIMEOUT_MS value "${rawTimeout}". Using default ${DEFAULT_MET_API_TIMEOUT_MS}ms.`,
-    );
+    // Note: Silently use default timeout. Invalid configuration is a developer
+    // error and logging would leak implementation details in stdio mode.
     return DEFAULT_MET_API_TIMEOUT_MS;
   }
 

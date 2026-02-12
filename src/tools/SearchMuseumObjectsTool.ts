@@ -114,7 +114,8 @@ export class SearchMuseumObjectsTool {
       };
     }
     catch (error) {
-      console.error('Error searching museum objects:', error);
+      // Note: Error is returned to user in the tool response below.
+      // No need to log to stderr as it would leak implementation details in stdio mode.
       const message = error instanceof MetMuseumApiError && error.isUserFriendly
         ? error.message
         : `Error searching museum objects: ${error}`;

@@ -49,11 +49,9 @@ export class GetObjectTool {
             mimeType: 'image/jpeg',
           });
         }
-        catch (error) {
-          console.warn(
-            `Failed to fetch image for museum object id ${objectId}. Returning metadata only.`,
-            error,
-          );
+        catch {
+          // Note: Silently fall back to metadata-only. Image fetch failures are
+          // transient network issues and logging would leak implementation details in stdio mode.
         }
       }
 
@@ -76,7 +74,8 @@ export class GetObjectTool {
           isError: true,
         };
       }
-      console.error('Error getting museum object:', error);
+      // Note: Error is already returned to user in the tool response.
+      // No need to log to stderr as it would leak implementation details in stdio mode.
       return {
         content: [{ type: 'text', text: `Error getting museum object id ${objectId}: ${error}` }],
         isError: true,
