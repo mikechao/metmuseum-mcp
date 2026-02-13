@@ -95,8 +95,8 @@ export async function startStreamableHttpServer(
     }
   });
 
-  const httpServer = expressApp.listen(port, () => {
-    console.error(`Met Museum MCP server running on http://localhost:${port}/mcp`);
+  const httpServer = expressApp.listen(port, host, () => {
+    console.error(`Met Museum MCP server running on http://${host}:${port}/mcp`);
   });
 
   const shutdown = () => {
