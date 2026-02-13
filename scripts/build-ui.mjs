@@ -27,7 +27,7 @@ async function buildApp({ srcDir, distDir }) {
     bundle: true,
     format: 'iife',
     write: false,
-    minify: false,
+    minify: true,
   });
 
   const bundledCode = result.outputFiles[0].text;
