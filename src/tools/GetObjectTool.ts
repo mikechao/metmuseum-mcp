@@ -23,7 +23,7 @@ export class GetObjectTool {
   public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     try {
       const data = await this.apiClient.getObject(objectId);
-      const text = `Object ID: ${data.objectID}\n`
+      let text = `Object ID: ${data.objectID}\n`
         + `Title: ${data.title}\n`
         + `${data.artistDisplayName ? `Artist: ${data.artistDisplayName}\n` : ''}`
         + `${data.artistDisplayBio ? `Artist Bio: ${data.artistDisplayBio}\n` : ''}`
@@ -35,24 +35,39 @@ export class GetObjectTool {
         + `${data.primaryImage ? `Primary Image URL: ${data.primaryImage}\n` : ''}`
         + `${data.tags ? `Tags: ${data.tags.map(tag => tag.term).join(', ')}\n` : ''}`;
 
+      let imageContent: ImageContent | null = null;
+      let imageFetchFailed = false;
+
+      if (returnImage && data.primaryImageSmall) {
+        try {
+          const imageBase64 = await imageToBase64(data.primaryImageSmall);
+          imageContent = {
+            type: 'image',
+            data: imageBase64,
+            mimeType: 'image/jpeg',
+          };
+        }
+        catch {
+          // Note: Image fetch failed - we'll add a note to the text below.
+          // This can happen due to network issues, timeouts, or invalid URLs.
+          imageFetchFailed = true;
+        }
+      }
+
+      if (imageFetchFailed) {
+        const fallbackImageUrl = data.primaryImage || data.primaryImageSmall;
+        text += fallbackImageUrl
+          ? `\nNote: Image could not be loaded. You can try accessing it directly here: ${fallbackImageUrl}`
+          : '\nNote: Image could not be loaded.';
+      }
+
       const content: Array<TextContent | ImageContent> = [];
       content.push({
         type: 'text',
         text,
       });
-      if (returnImage && data.primaryImageSmall) {
-        try {
-          const imageBase64 = await imageToBase64(data.primaryImageSmall);
-          content.push({
-            type: 'image',
-            data: imageBase64,
-            mimeType: 'image/jpeg',
-          });
-        }
-        catch {
-          // Note: Silently fall back to metadata-only. Image fetch failures are
-          // transient network issues and logging would leak implementation details in stdio mode.
-        }
+      if (imageContent) {
+        content.push(imageContent);
       }
 
       return {
