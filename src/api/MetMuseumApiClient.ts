@@ -1,4 +1,5 @@
 import type z from 'zod';
+import { Buffer } from 'node:buffer';
 import process from 'node:process';
 import { DEFAULT_MET_API_TIMEOUT_MS } from '../constants.js';
 import {
@@ -136,6 +137,56 @@ export class MetMuseumApiClient {
       throw new MetMuseumApiError(`Invalid object response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
     }
     return parseResult.data;
+  }
+
+  public async getImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
+    let response: Response;
+    try {
+      response = await metMuseumRateLimiter.fetch(imageUrl, {
+        signal: AbortSignal.timeout(this.requestTimeoutMs),
+      });
+    }
+    catch (error) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+        throw new MetMuseumApiError(
+          'The artwork image is taking too long to load. Please try again.',
+          undefined,
+          true,
+        );
+      }
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new MetMuseumApiError(
+          'The artwork image is unreachable right now. Please try again.',
+          undefined,
+          true,
+        );
+      }
+      throw error;
+    }
+
+    if (!response.ok) {
+      let userMessage = 'Unable to load the artwork image right now.';
+      if (response.status === 404) {
+        userMessage = 'The artwork image was not found.';
+      }
+      else if (response.status === 429) {
+        userMessage = 'Too many requests while loading the artwork image. Please wait a moment and try again.';
+      }
+      else if (response.status >= 500) {
+        userMessage = 'The image host is experiencing issues. Please try again later.';
+      }
+      throw new MetMuseumApiError(userMessage, response.status, true);
+    }
+
+    const mimeTypeHeader = response.headers.get('content-type') ?? '';
+    const parsedMimeType = mimeTypeHeader.split(';')[0]?.trim();
+    const mimeType = parsedMimeType?.startsWith('image/') ? parsedMimeType : 'image/jpeg';
+
+    const imageBytes = await response.arrayBuffer();
+    return {
+      data: Buffer.from(imageBytes).toString('base64'),
+      mimeType,
+    };
   }
 
   private async fetchAndParse<T>(

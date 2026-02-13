@@ -44,12 +44,10 @@
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "image-to-base64": "^2.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.11.0",
-    "@types/image-to-base64": "^2.1.2",
     "@types/node": "^22.14.0",
     "esbuild": "^0.24.2",
     "eslint": "^9.23.0",

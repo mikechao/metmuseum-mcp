@@ -1,6 +1,5 @@
 import type { CallToolResult, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
-import imageToBase64 from 'image-to-base64';
 import z from 'zod';
 import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 
@@ -40,11 +39,11 @@ export class GetObjectTool {
 
       if (returnImage && data.primaryImageSmall) {
         try {
-          const imageBase64 = await imageToBase64(data.primaryImageSmall);
+          const image = await this.apiClient.getImageAsBase64(data.primaryImageSmall);
           imageContent = {
             type: 'image',
-            data: imageBase64,
-            mimeType: 'image/jpeg',
+            data: image.data,
+            mimeType: image.mimeType,
           };
         }
         catch {
