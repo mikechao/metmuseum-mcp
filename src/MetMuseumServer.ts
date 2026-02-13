@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
@@ -14,11 +15,29 @@ import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
 import { GetMuseumObjectAppResource } from './ui/GetMuseumObjectAppResource.js';
 import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
+function resolveServerVersion(): string {
+  try {
+    const packageJsonUrl = new URL('../package.json', import.meta.url);
+    const packageJsonRaw = readFileSync(packageJsonUrl, 'utf-8');
+    const packageJson = JSON.parse(packageJsonRaw) as { version?: unknown };
+    if (typeof packageJson.version === 'string' && packageJson.version.trim()) {
+      return packageJson.version;
+    }
+  }
+  catch {
+    // Fallback keeps startup resilient if package metadata is unavailable.
+  }
+
+  return '0.0.0';
+}
+
+const SERVER_VERSION = resolveServerVersion();
+
 export function createMetMuseumServer(): McpServer {
   const server = new McpServer(
     {
       name: 'met-museum-mcp',
-      version: '1.0.0',
+      version: SERVER_VERSION,
     },
     {
       capabilities: {

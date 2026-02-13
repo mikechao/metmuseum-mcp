@@ -21,6 +21,7 @@ jobs:
       - name: Install dependencies and build 🔧
         run: |
           pnpm install --frozen-lockfile
+          pnpm run versions:check || (echo "Version check failed" && exit 1)
           pnpm run build || (echo "Build failed" && exit 1)
       - name: Publish to NPM 📦
         run: npm publish --provenance
@@ -45,6 +46,7 @@ jobs:
       - name: Install dependencies and build 🔧
         run: |
           pnpm install --frozen-lockfile
+          pnpm run versions:check || (echo "Version check failed" && exit 1)
           pnpm run build || (echo "Build failed" && exit 1)
       - name: Install Anthropic MCPB CLI
         run: pnpm add -g @anthropic-ai/mcpb

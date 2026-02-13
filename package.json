@@ -34,8 +34,8 @@
     "dist"
   ],
   "scripts": {
-    "sync-versions": "node scripts/sync-versions.mjs",
-    "build": "pnpm run sync-versions && tsc && node scripts/build-ui.mjs && shx chmod +x dist/*.js",
+    "versions:check": "node scripts/sync-versions.mjs",
+    "build": "tsc && node scripts/build-ui.mjs && shx chmod +x dist/*.js",
     "lint": "eslint . --ext .ts,.js,.mjs,.cjs --fix",
     "lint:check": "eslint . --ext .ts,.js,.mjs,.cjs",
     "typecheck": "tsc --noEmit",
