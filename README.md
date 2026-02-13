@@ -2,7 +2,7 @@
 
 # Met Museum MCP Server
 
-A Model Context Protocol (MCP) server that provides access to the Metropolitan Museum of Art Collection through natural language interactions. This server allows AI models to search The Met's art collection and have art works available as a Resource.
+A Model Context Protocol (MCP) server that provides access to the Metropolitan Museum of Art Collection through natural language interactions. This server allows AI models to search The Met's art collection and retrieve artwork details (including images) via tool results.
 
 <a href="https://glama.ai/mcp/servers/@mikechao/metmuseum-mcp"><img width="380" height="200" src="https://glama.ai/mcp/servers/@mikechao/metmuseum-mcp/badge" alt="Met Museum MCP Server" /></a>
 
@@ -50,13 +50,13 @@ Search for various objects in The Met based on the inputs.
 
 Get a specific object from The Met containing all open access data about that object, including its image (if the image is available under Open Access).
 
-If there is an image it is added to the Resource of the server via the title of the object.
+If there is an image and `returnImage` is true, it is returned as an image content block in the tool result (base64-encoded JPEG).
 
 Use this tool when the user asks for deeper details on a specific artwork and you already have an `objectId`.
 
 - Inputs:
   - `objectId` (number): The id of the object to retrieve
-  - `returnImage` (boolean, optional, default: true): Whether to return the image (if available) of the object and add it to the server resources
+  - `returnImage` (boolean, optional, default: true): Whether to include the object's image (if available) in the tool result
 - Outputs:
   ```
   Title: Self-Portrait with a Straw Hat (obverse: The Potato Peeler)
