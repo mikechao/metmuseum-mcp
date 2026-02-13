@@ -9,7 +9,7 @@ export class GetObjectTool {
     + 'Use this when the user asks for deeper details on a specific object ID.';
 
   public readonly inputSchema = z.object({
-    objectId: z.number().describe('The ID of the museum object to retrieve'),
+    objectId: z.number().int().positive().describe('The positive integer ID of the museum object to retrieve'),
     returnImage: z.boolean().optional().default(true).describe('Whether to return the image (if available) of the object'),
   }).describe('Get a museum object by its ID');
 
@@ -22,6 +22,13 @@ export class GetObjectTool {
   public async execute({ objectId, returnImage }: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     try {
       const data = await this.apiClient.getObject(objectId);
+      const tagsText = Array.isArray(data.tags)
+        ? data.tags
+            .map(tag => tag?.term?.trim())
+            .filter((term): term is string => Boolean(term))
+            .join(', ')
+        : '';
+
       let text = `Object ID: ${data.objectID}\n`
         + `Title: ${data.title}\n`
         + `${data.artistDisplayName ? `Artist: ${data.artistDisplayName}\n` : ''}`
@@ -32,7 +39,7 @@ export class GetObjectTool {
         + `${data.medium ? `Medium: ${data.medium}\n` : ''}`
         + `${data.dimensions ? `Dimensions: ${data.dimensions}\n` : ''}`
         + `${data.primaryImage ? `Primary Image URL: ${data.primaryImage}\n` : ''}`
-        + `${data.tags ? `Tags: ${data.tags.map(tag => tag.term).join(', ')}\n` : ''}`;
+        + `${tagsText ? `Tags: ${tagsText}\n` : ''}`;
 
       let imageContent: ImageContent | null = null;
       let imageFetchFailed = false;
