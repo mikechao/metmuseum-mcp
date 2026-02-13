@@ -147,7 +147,7 @@ Add this to your `claude_desktop_config.json`:
 
 ```json
 {
-  "mcp-servers": {
+  "mcpServers": {
     "met-museum": {
       "command": "npx",
       "args": [
