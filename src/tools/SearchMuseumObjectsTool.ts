@@ -4,7 +4,7 @@ import z from 'zod';
 import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 import { DEFAULT_SEARCH_TOOL_PAGE_SIZE, MAX_SEARCH_PAGE_SIZE } from '../constants.js';
 
-export const SearchInputSchema = z.object({
+const SearchInputBaseSchema = z.object({
   q: z.string().describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
   hasImages: z.boolean().optional().default(false).describe(`Only returns objects that have images`),
   title: z.boolean().optional().default(false).describe(`This should be set to true if you want to search for objects by title`),
@@ -15,11 +15,19 @@ export const SearchInputSchema = z.object({
   departmentId: z.number().optional().describe(`Returns objects that are in the specified department. The departmentId should come from the 'list-departments' tool.`),
   medium: z.string().optional().describe(`Restricts search to objects with the specified medium`),
   geoLocation: z.string().optional().describe(`Restricts search to objects with the specified geographic location`),
-  dateBegin: z.number().int().optional().describe(`Restricts search to objects with an object date on or after this year`),
-  dateEnd: z.number().int().optional().describe(`Restricts search to objects with an object date on or before this year`),
+  dateBegin: z.number().int().optional().describe(`Start year for a date range filter. Must be provided together with dateEnd.`),
+  dateEnd: z.number().int().optional().describe(`End year for a date range filter. Must be provided together with dateBegin.`),
   page: z.number().int().positive().optional().default(1).describe(`1-based page number for paginated object IDs`),
   pageSize: z.number().int().positive().max(MAX_SEARCH_PAGE_SIZE).optional().default(DEFAULT_SEARCH_TOOL_PAGE_SIZE).describe(`Number of object IDs to return per page (max ${MAX_SEARCH_PAGE_SIZE})`),
 });
+
+export const SearchInputSchema = SearchInputBaseSchema.refine(
+  ({ dateBegin, dateEnd }) => (dateBegin === undefined) === (dateEnd === undefined),
+  {
+    message: 'dateBegin and dateEnd must both be provided when filtering by date range.',
+    path: ['dateBegin'],
+  },
+);
 
 /**
  * Tool for searching objects in the Met Museum
@@ -36,8 +44,8 @@ export class SearchMuseumObjectsTool {
     + 'geographic location, and date range. '
     + 'Use page and pageSize to paginate results.';
 
-  // Define the input schema
-  public readonly inputSchema = SearchInputSchema;
+  // Define the MCP registration schema (must stay a ZodObject because server registration reads `.shape`).
+  public readonly inputSchema = SearchInputBaseSchema;
 
   private readonly apiClient: MetMuseumApiClient;
 
@@ -48,23 +56,36 @@ export class SearchMuseumObjectsTool {
   /**
    * Execute the search operation
    */
-  public async execute({
-    q,
-    hasImages,
-    title,
-    isHighlight,
-    tags,
-    isOnView,
-    artistOrCulture,
-    departmentId,
-    medium,
-    geoLocation,
-    dateBegin,
-    dateEnd,
-    page,
-    pageSize,
-  }: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
+  public async execute(input: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
     try {
+      const parsedInput = SearchInputSchema.safeParse(input);
+      if (!parsedInput.success) {
+        return {
+          content: [{
+            type: 'text',
+            text: 'Please provide both dateBegin and dateEnd when filtering by date range.',
+          }],
+          isError: true,
+        };
+      }
+
+      const {
+        q,
+        hasImages,
+        title,
+        isHighlight,
+        tags,
+        isOnView,
+        artistOrCulture,
+        departmentId,
+        medium,
+        geoLocation,
+        dateBegin,
+        dateEnd,
+        page,
+        pageSize,
+      } = parsedInput.data;
+
       const searchResult = await this.apiClient.searchObjects({
         q,
         hasImages,

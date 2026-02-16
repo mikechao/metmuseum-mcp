@@ -98,6 +98,14 @@ export class MetMuseumApiClient {
     dateBegin?: number;
     dateEnd?: number;
   }): Promise<z.infer<typeof SearchResponseSchema>> {
+    if ((dateBegin === undefined) !== (dateEnd === undefined)) {
+      throw new MetMuseumApiError(
+        'Both dateBegin and dateEnd are required when filtering by date range.',
+        undefined,
+        true,
+      );
+    }
+
     const url = new URL(this.searchUrl);
     url.searchParams.set('q', q);
     if (hasImages) {
