@@ -2,6 +2,24 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const APP_SCRIPT_TAG = '<script src="mcp-app.js"></script>';
+const SHARED_THEME_TOKENS_PLACEHOLDER = '/* @shared-theme-tokens */';
+
+function inlineSharedThemeTokens(
+  html: string,
+  sharedThemeTokens: string,
+  htmlPath: string,
+): string {
+  const placeholderSections = html.split(SHARED_THEME_TOKENS_PLACEHOLDER);
+  if (placeholderSections.length === 1) {
+    return html;
+  }
+
+  if (placeholderSections.length !== 2) {
+    throw new Error(`Expected exactly one shared theme placeholder in ${htmlPath}.`);
+  }
+
+  return `${placeholderSections[0]}${sharedThemeTokens.trim()}${placeholderSections[1]}`;
+}
 
 function toSafeInlineScript(script: string): string {
   return script.replace(/<\/script/gi, '<\\/script');
@@ -19,7 +37,13 @@ export async function resolveAppHtml(
   htmlPath: string,
   distHtmlPath: string,
 ): Promise<string> {
-  const html = await readFile(htmlPath, 'utf-8');
+  const htmlTemplate = await readFile(htmlPath, 'utf-8');
+  let html = htmlTemplate;
+  if (htmlTemplate.includes(SHARED_THEME_TOKENS_PLACEHOLDER)) {
+    const sharedThemePath = path.join(path.dirname(htmlPath), '..', 'shared', 'theme-tokens.css');
+    const sharedThemeTokens = await readFile(sharedThemePath, 'utf-8');
+    html = inlineSharedThemeTokens(htmlTemplate, sharedThemeTokens, htmlPath);
+  }
 
   if (!html.includes(APP_SCRIPT_TAG)) {
     return html;
