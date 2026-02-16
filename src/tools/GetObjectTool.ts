@@ -88,9 +88,7 @@ export class GetObjectTool {
       if (error instanceof MetMuseumApiError) {
         const message = error.isUserFriendly
           ? error.message
-          : error.status === 404
-            ? `Museum object id ${objectId} was not found.`
-            : `Error getting museum object id ${objectId}: ${error.message}`;
+          : `Error getting museum object id ${objectId}: ${error.message}`;
         return {
           content: [{ type: 'text', text: message }],
           isError: true,
