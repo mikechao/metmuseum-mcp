@@ -155,9 +155,9 @@ function setupTools(
       inputSchema: openMetExplorer.inputSchema.shape,
       annotations: {
         title: 'Open Met Explorer',
-        readOnlyHint: false,
+        readOnlyHint: true,
         destructiveHint: false,
-        idempotentHint: false,
+        idempotentHint: true,
         openWorldHint: true,
       },
       _meta: {

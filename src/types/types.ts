@@ -1,5 +1,5 @@
-import z from 'zod';
 import type { Resource } from '@modelcontextprotocol/sdk/types.js';
+import z from 'zod';
 
 export interface AppResource extends Resource {
   mimeType: string;
