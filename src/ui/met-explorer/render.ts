@@ -237,9 +237,9 @@ export function renderDetails(
 function appendDetailRow(
   table: HTMLDListElement,
   key: string,
-  value: string | number | undefined,
+  value: string | number | null | undefined,
 ): void {
-  if (!value) {
+  if (value === undefined || value === null || value === '') {
     return;
   }
 

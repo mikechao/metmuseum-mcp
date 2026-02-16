@@ -199,8 +199,8 @@ function render(): void {
   }
 }
 
-function appendMetaRow(label: string, value: string | undefined): void {
-  if (!value) {
+function appendMetaRow(label: string, value: string | number | null | undefined): void {
+  if (value === undefined || value === null || value === '') {
     return;
   }
 
@@ -213,7 +213,7 @@ function appendMetaRow(label: string, value: string | undefined): void {
 
   const content = document.createElement('dd');
   content.className = 'meta-value';
-  content.textContent = value;
+  content.textContent = String(value);
 
   row.append(key, content);
   metaEl.append(row);
