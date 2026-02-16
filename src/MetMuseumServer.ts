@@ -12,6 +12,12 @@ import { GetObjectTool } from './tools/GetObjectTool.js';
 import { ListDepartmentsTool } from './tools/ListDepartmentsTool.js';
 import { OpenMetExplorerTool } from './tools/OpenMetExplorerTool.js';
 import { SearchMuseumObjectsTool } from './tools/SearchMuseumObjectsTool.js';
+import {
+  DepartmentsSchema,
+  GetMuseumObjectStructuredContentSchema,
+  OpenMetExplorerStructuredContentSchema,
+  SearchMuseumObjectsStructuredContentSchema,
+} from './types/types.js';
 import { GetMuseumObjectAppResource } from './ui/GetMuseumObjectAppResource.js';
 import { OpenMetExplorerAppResource } from './ui/OpenMetExplorerAppResource.js';
 
@@ -90,6 +96,7 @@ function setupTools(
     {
       description: listDepartments.description,
       inputSchema: listDepartments.inputSchema.shape,
+      outputSchema: DepartmentsSchema.shape,
       annotations: {
         title: 'List Met Departments',
         readOnlyHint: true,
@@ -111,6 +118,7 @@ function setupTools(
     {
       description: search.description,
       inputSchema: search.inputSchema.shape,
+      outputSchema: SearchMuseumObjectsStructuredContentSchema.shape,
       annotations: {
         title: 'Search Met Museum Objects',
         readOnlyHint: true,
@@ -132,6 +140,7 @@ function setupTools(
     {
       description: getMuseumObject.description,
       inputSchema: getMuseumObject.inputSchema.shape,
+      outputSchema: GetMuseumObjectStructuredContentSchema.shape,
       annotations: {
         title: 'Get Met Museum Object',
         readOnlyHint: true,
@@ -153,6 +162,7 @@ function setupTools(
     {
       description: openMetExplorer.description,
       inputSchema: openMetExplorer.inputSchema.shape,
+      outputSchema: OpenMetExplorerStructuredContentSchema.shape,
       annotations: {
         title: 'Open Met Explorer',
         readOnlyHint: true,

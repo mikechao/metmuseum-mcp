@@ -3,6 +3,7 @@ import type { AppState, LaunchParams } from './state.js';
 import type { ResultCard, SearchRequest } from './types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
 import { OBJECT_HYDRATION_CONCURRENCY } from '../../constants.js';
+import { OpenMetExplorerLaunchStateSchema } from '../../types/types.js';
 import {
   applyContext,
   errorToMessage,
@@ -18,7 +19,7 @@ import {
   addSelectedObjectToContext as addSelectedObjectToContextAction,
   updateAddContextButton as updateAddContextButtonState,
 } from './object-context.js';
-import { getStructuredValue, parseDepartments, parseSearchResult } from './parsers.js';
+import { parseDepartments, parseExplorerLaunchState, parseSearchResult } from './parsers.js';
 import { renderDetails as renderDetailsView, renderResults as renderResultsView } from './render.js';
 import {
   createInitialState,
@@ -104,7 +105,7 @@ app.ontoolinput = (params: ToolInputParams) => {
 };
 
 app.ontoolresult = (params: ToolResult) => {
-  const initialState = getStructuredValue(params)?.initialState as LaunchParams | undefined;
+  const initialState = parseExplorerLaunchState(params);
   applyLaunchState(initialState);
 };
 
@@ -191,21 +192,22 @@ function setViewMode(mode: 'results' | 'detail'): void {
 // ============================================================================
 
 function applyLaunchState(rawState: unknown): void {
-  if (!rawState || typeof rawState !== 'object') {
+  const parsedLaunch = OpenMetExplorerLaunchStateSchema.safeParse(rawState);
+  if (!parsedLaunch.success) {
     return;
   }
 
-  const launch = rawState as Record<string, unknown>;
+  const launch = parsedLaunch.data;
   const normalizedLaunch: LaunchParams = {
-    hasImages: typeof launch.hasImages === 'boolean' ? launch.hasImages : true,
-    title: typeof launch.title === 'boolean' ? launch.title : false,
+    hasImages: launch.hasImages ?? true,
+    title: launch.title ?? false,
   };
 
-  if (typeof launch.q === 'string') {
+  if (launch.q !== undefined) {
     normalizedLaunch.q = launch.q;
   }
 
-  if (typeof launch.departmentId === 'number') {
+  if (launch.departmentId !== undefined) {
     normalizedLaunch.departmentId = launch.departmentId;
   }
 

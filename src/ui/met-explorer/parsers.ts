@@ -1,4 +1,10 @@
+import type z from 'zod';
 import type { ToolResult } from '../shared/types.js';
+import {
+  DepartmentsSchema,
+  OpenMetExplorerStructuredContentSchema,
+  SearchMuseumObjectsStructuredContentSchema,
+} from '../../types/types.js';
 import { extractText } from '../shared/utils.js';
 
 export interface Department {
@@ -14,6 +20,8 @@ export interface ParsedSearchResult {
   objectIDs: number[];
 }
 
+export type ExplorerLaunchState = z.infer<typeof OpenMetExplorerStructuredContentSchema>['initialState'];
+
 export function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
   const value = result?.structuredContent;
   if (value && typeof value === 'object') {
@@ -24,8 +32,11 @@ export function getStructuredValue(result: ToolResult): Record<string, unknown> 
 
 export function parseDepartments(result: ToolResult): Department[] {
   const structured = getStructuredValue(result);
-  if (Array.isArray(structured?.departments)) {
-    return structured.departments as Department[];
+  if (structured) {
+    const parsed = DepartmentsSchema.safeParse(structured);
+    if (parsed.success) {
+      return parsed.data.departments;
+    }
   }
 
   const text = extractText(result);
@@ -50,38 +61,11 @@ export function parseSearchResult(
   requestedPageSize: number,
 ): ParsedSearchResult {
   const structured = getStructuredValue(result);
-  if (structured && typeof structured.total === 'number' && Array.isArray(structured.objectIDs)) {
-    const total = structured.total as number;
-    const pageSize
-      = typeof structured.pageSize === 'number' && structured.pageSize > 0
-        ? structured.pageSize
-        : requestedPageSize;
-    const page
-      = typeof structured.page === 'number' && structured.page > 0
-        ? structured.page
-        : requestedPage;
-    const totalPages
-      = typeof structured.totalPages === 'number' && structured.totalPages >= 0
-        ? structured.totalPages
-        : total > 0
-          ? Math.ceil(total / pageSize)
-          : 0;
-    const hasServerPagination
-      = typeof structured.page === 'number'
-        && typeof structured.pageSize === 'number'
-        && typeof structured.totalPages === 'number';
-    const start = (page - 1) * pageSize;
-    const objectIDs = hasServerPagination
-      ? (structured.objectIDs as number[])
-      : (structured.objectIDs as number[]).slice(start, start + pageSize);
-
-    return {
-      total,
-      page,
-      pageSize,
-      totalPages,
-      objectIDs,
-    };
+  if (structured) {
+    const parsed = SearchMuseumObjectsStructuredContentSchema.safeParse(structured);
+    if (parsed.success) {
+      return parsed.data;
+    }
   }
 
   const text = extractText(result);
@@ -117,4 +101,18 @@ export function parseSearchResult(
     totalPages,
     objectIDs,
   };
+}
+
+export function parseExplorerLaunchState(result: ToolResult): ExplorerLaunchState | undefined {
+  const structured = getStructuredValue(result);
+  if (!structured) {
+    return undefined;
+  }
+
+  const parsed = OpenMetExplorerStructuredContentSchema.safeParse(structured);
+  if (!parsed.success) {
+    return undefined;
+  }
+
+  return parsed.data.initialState;
 }

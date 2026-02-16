@@ -1,7 +1,10 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
+import type { DepartmentsSchema } from '../types/types.js';
 import z from 'zod';
 import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
+
+type ListDepartmentsStructuredContent = z.infer<typeof DepartmentsSchema>;
 
 export class ListDepartmentsTool {
   public readonly name: string = 'list-departments';
@@ -17,14 +20,15 @@ export class ListDepartmentsTool {
   public async execute(): Promise<CallToolResult> {
     try {
       const departments = await this.apiClient.listDepartments();
+      const structuredContent: ListDepartmentsStructuredContent = {
+        departments,
+      };
       const text = departments.map((department) => {
         return `Department ID: ${department.departmentId}, Display Name: ${department.displayName}`;
       }).join('\n');
       return {
         content: [{ type: 'text', text }],
-        structuredContent: {
-          departments,
-        },
+        structuredContent,
         isError: false,
       };
     }

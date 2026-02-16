@@ -9,7 +9,7 @@ export interface AppResource extends Resource {
 /**
  * https://metmuseum.github.io/#departments
  */
-const DepartmentSchema = z.object({
+export const DepartmentSchema = z.object({
   departmentId: z.number().describe(
     'Department ID as an integer. The departmentId is to be used as a query '
     + 'parameter on the `/objects` endpoint',
@@ -118,3 +118,26 @@ export const ObjectResponseSchema = z.object({
   isTimelineWork: z.boolean().describe('Whether the artwork is featured on the Timeline of Art History website'),
   GalleryNumber: z.string().describe('Gallery number where artwork is located'),
 }).partial(); // All fields are optional as the API may not return all fields for all objects
+
+export const SearchMuseumObjectsStructuredContentSchema = z.object({
+  total: z.number().describe('Total number of matching objects across all pages'),
+  page: z.number().int().positive().describe('Current 1-based page number returned by the tool'),
+  pageSize: z.number().int().positive().describe('Number of object IDs returned per page'),
+  totalPages: z.number().int().nonnegative().describe('Total number of pages available for this query'),
+  objectIDs: z.array(z.number()).describe('Paginated list of object IDs for the current page'),
+});
+
+export const GetMuseumObjectStructuredContentSchema = z.object({
+  object: ObjectResponseSchema.describe('Detailed object data for the requested object ID'),
+});
+
+export const OpenMetExplorerLaunchStateSchema = z.object({
+  q: z.string().optional().describe('Optional initial search query to seed the explorer'),
+  hasImages: z.boolean().optional().describe('Whether initial search prioritizes objects with images'),
+  title: z.boolean().optional().describe('Whether initial search should match only object titles'),
+  departmentId: z.number().optional().describe('Optional department ID to pre-select in the explorer'),
+});
+
+export const OpenMetExplorerStructuredContentSchema = z.object({
+  initialState: OpenMetExplorerLaunchStateSchema.describe('Initial app launch state for the Met Explorer UI'),
+});

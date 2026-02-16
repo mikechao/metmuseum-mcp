@@ -1,7 +1,10 @@
 import type { CallToolResult, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
+import type { GetMuseumObjectStructuredContentSchema } from '../types/types.js';
 import z from 'zod';
 import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
+
+type GetMuseumObjectStructuredContent = z.infer<typeof GetMuseumObjectStructuredContentSchema>;
 
 export class GetObjectTool {
   public readonly name: string = 'get-museum-object';
@@ -77,11 +80,13 @@ export class GetObjectTool {
         content.push(imageContent);
       }
 
+      const structuredContent: GetMuseumObjectStructuredContent = {
+        object: data,
+      };
+
       return {
         content,
-        structuredContent: {
-          object: data,
-        },
+        structuredContent,
       };
     }
     catch (error) {

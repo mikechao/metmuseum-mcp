@@ -1,8 +1,11 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { MetMuseumApiClient } from '../api/MetMuseumApiClient.js';
+import type { SearchMuseumObjectsStructuredContentSchema } from '../types/types.js';
 import z from 'zod';
 import { MetMuseumApiError } from '../api/MetMuseumApiClient.js';
 import { DEFAULT_SEARCH_TOOL_PAGE_SIZE, MAX_SEARCH_PAGE_SIZE } from '../constants.js';
+
+type SearchMuseumObjectsStructuredContent = z.infer<typeof SearchMuseumObjectsStructuredContentSchema>;
 
 const SearchInputBaseSchema = z.object({
   q: z.string().describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
@@ -102,15 +105,16 @@ export class SearchMuseumObjectsTool {
       });
 
       if (searchResult.total === 0 || !searchResult.objectIDs) {
+        const structuredContent: SearchMuseumObjectsStructuredContent = {
+          total: 0,
+          page: 1,
+          pageSize,
+          totalPages: 0,
+          objectIDs: [],
+        };
         return {
           content: [{ type: 'text', text: 'No objects found' }],
-          structuredContent: {
-            total: 0,
-            page: 1,
-            pageSize,
-            totalPages: 0,
-            objectIDs: [],
-          },
+          structuredContent,
           isError: false,
         };
       }
@@ -122,15 +126,16 @@ export class SearchMuseumObjectsTool {
       const start = (safePage - 1) * pageSize;
       const objectIDs = allObjectIds.slice(start, start + pageSize);
       const text = `Total objects found: ${total}\nPage: ${safePage}/${totalPages}\nObject IDs: ${objectIDs.join(', ')}`;
+      const structuredContent: SearchMuseumObjectsStructuredContent = {
+        total,
+        page: safePage,
+        pageSize,
+        totalPages,
+        objectIDs,
+      };
       return {
         content: [{ type: 'text', text }],
-        structuredContent: {
-          total,
-          page: safePage,
-          pageSize,
-          totalPages,
-          objectIDs,
-        },
+        structuredContent,
         isError: false,
       };
     }

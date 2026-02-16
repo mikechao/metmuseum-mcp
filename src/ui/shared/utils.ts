@@ -4,6 +4,7 @@ import {
   applyHostFonts,
   applyHostStyleVariables,
 } from '@modelcontextprotocol/ext-apps';
+import { GetMuseumObjectStructuredContentSchema } from '../../types/types.js';
 
 // ============================================================================
 // Context Helpers
@@ -71,12 +72,13 @@ export function getImageContent(
 // ============================================================================
 
 export function parseObjectResult(result: ToolResult): ObjectData | null {
-  const structured = result?.structuredContent;
-  if (structured && typeof structured === 'object') {
-    const candidate = (structured as Record<string, unknown>).object;
-    if (candidate && typeof candidate === 'object') {
-      return candidate as ObjectData;
-    }
+  const parsedStructured = GetMuseumObjectStructuredContentSchema.safeParse(result?.structuredContent);
+  if (parsedStructured.success) {
+    const object = parsedStructured.data.object;
+    return {
+      ...object,
+      tags: Array.isArray(object.tags) ? object.tags : undefined,
+    };
   }
 
   const text = extractText(result);

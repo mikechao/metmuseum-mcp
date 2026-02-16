@@ -1,5 +1,8 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { OpenMetExplorerStructuredContentSchema } from '../types/types.js';
 import z from 'zod';
+
+type OpenMetExplorerStructuredContent = z.infer<typeof OpenMetExplorerStructuredContentSchema>;
 
 export class OpenMetExplorerTool {
   public readonly name: string = 'open-met-explorer';
@@ -17,6 +20,10 @@ export class OpenMetExplorerTool {
   }).describe('Open the Met Museum explorer app UI');
 
   public async execute(args: z.infer<typeof this.inputSchema>): Promise<CallToolResult> {
+    const structuredContent: OpenMetExplorerStructuredContent = {
+      initialState: args,
+    };
+
     return {
       content: [{
         type: 'text',
@@ -30,9 +37,7 @@ The explorer app attempts to provide visible search results in context while use
 - Ask the user to click "Add to conversation" when they want a selected object used in chat.
 - If image context is missing, call get-museum-object with {"objectId": <id>, "returnImage": true}.`,
       }],
-      structuredContent: {
-        initialState: args,
-      },
+      structuredContent,
       isError: false,
     };
   }
