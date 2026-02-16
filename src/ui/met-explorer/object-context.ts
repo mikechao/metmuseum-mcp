@@ -9,7 +9,7 @@ interface StatusCallback {
 
 type AddContextButtonState = Pick<
   AppState,
-  'selectedObject' | 'lastAddedContextObjectId' | 'isAddingToContext'
+  'selectedObject' | 'addedContextObjectIds' | 'isAddingToContext'
 >;
 
 type AddSelectedObjectToContextState = Pick<
@@ -18,7 +18,7 @@ type AddSelectedObjectToContextState = Pick<
   | 'isAddingToContext'
   | 'selectedImageData'
   | 'selectedImageMimeType'
-  | 'lastAddedContextObjectId'
+  | 'addedContextObjectIds'
 >;
 
 export function getObjectContextId(objectData: ObjectData | null): string | null {
@@ -42,8 +42,7 @@ export function updateAddContextButton(
   const selectedObjectId = getObjectContextId(state.selectedObject);
   const isAdded = Boolean(
     selectedObjectId
-    && state.lastAddedContextObjectId
-    && selectedObjectId === state.lastAddedContextObjectId,
+    && state.addedContextObjectIds.has(selectedObjectId),
   );
   const canAdd = state.selectedObject !== null && !state.isAddingToContext && !isAdded;
 
@@ -54,6 +53,18 @@ export function updateAddContextButton(
     : isAdded
       ? 'Added'
       : 'Add to conversation';
+}
+
+function markObjectAsAdded(
+  state: AddSelectedObjectToContextState,
+  objectData: ObjectData,
+): void {
+  const objectId = getObjectContextId(objectData);
+  if (!objectId) {
+    return;
+  }
+
+  state.addedContextObjectIds.add(objectId);
 }
 
 function buildObjectContextText(objectData: ObjectData): string {
@@ -139,7 +150,7 @@ async function sendToolCallMessageForImageContext(
     throw new Error('Host rejected app message delivery.');
   }
 
-  state.lastAddedContextObjectId = getObjectContextId(objectData);
+  markObjectAsAdded(state, objectData);
   return true;
 }
 
@@ -190,7 +201,7 @@ export async function addSelectedObjectToContext(
         : undefined,
     });
 
-    state.lastAddedContextObjectId = getObjectContextId(objectData);
+    markObjectAsAdded(state, objectData);
 
     if (canSendImagePayload) {
       callbacks.setStatus('Object details and image were added to model context.', false);
@@ -249,7 +260,7 @@ export async function addSelectedObjectToContext(
       await app.updateModelContext({
         content: [{ type: 'text', text: objectDetailsText }],
       });
-      state.lastAddedContextObjectId = getObjectContextId(objectData);
+      markObjectAsAdded(state, objectData);
 
       if (await tryToolCallMessageFallback()) {
         return;

@@ -17,7 +17,7 @@ export interface AppState {
   selectedObject: ObjectData | null;
   selectedImageData: string | null;
   selectedImageMimeType: string | null;
-  lastAddedContextObjectId: string | null;
+  addedContextObjectIds: Set<string>;
   isImageExpanded: boolean;
   viewMode: 'results' | 'detail';
   latestSearchToken: number;
@@ -47,7 +47,7 @@ export function createInitialState(): AppState {
     selectedObject: null,
     selectedImageData: null,
     selectedImageMimeType: null,
-    lastAddedContextObjectId: null,
+    addedContextObjectIds: new Set<string>(),
     isImageExpanded: false,
     viewMode: 'results',
     latestSearchToken: 0,
