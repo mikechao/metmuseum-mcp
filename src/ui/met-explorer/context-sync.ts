@@ -56,6 +56,9 @@ function buildSearchResultsContextText(state: SearchResultsContextSyncState): st
     resultLines,
     '',
     'These results are already available — no need to call search-museum-objects for this data.',
+    'In your response, state explicitly that you can see the current visible results.',
+    'Say this naturally in your own words (no fixed template sentence required).',
+    'You can curate recommendations directly from these visible results and cite titles/object IDs from this list.',
   ].join('\n');
 }
 
