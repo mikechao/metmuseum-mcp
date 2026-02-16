@@ -9,8 +9,8 @@ import {
 } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
 
-type DeepNullToUndefined<T> =
-  T extends null
+type DeepNullToUndefined<T>
+  = T extends null
     ? undefined
     : T extends readonly (infer U)[]
       ? Array<DeepNullToUndefined<U>>
