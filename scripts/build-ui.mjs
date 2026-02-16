@@ -7,10 +7,9 @@
 import * as fs from 'node:fs';
 import process from 'node:process';
 import * as esbuild from 'esbuild';
+import { buildAppHtmlTemplate } from './ui-template-build.mjs';
 
-const APP_SCRIPT_TAG_PATTERN = /<script[^>]*\ssrc=(["'])mcp-app\.js\1[^>]*>\s*<\/script>/gi;
 const SHARED_THEME_TOKENS_PATH = 'src/ui/shared/theme-tokens.css';
-const SHARED_THEME_TOKENS_PLACEHOLDER = '/* @shared-theme-tokens */';
 
 const APP_CONFIGS = [
   {
@@ -23,18 +22,7 @@ const APP_CONFIGS = [
   },
 ];
 
-function inlineSharedThemeTokens(htmlTemplate, sharedThemeTokens, templatePath) {
-  const placeholderSections = htmlTemplate.split(SHARED_THEME_TOKENS_PLACEHOLDER);
-  if (placeholderSections.length !== 2) {
-    throw new Error(
-      `Expected exactly one shared theme placeholder in ${templatePath}, found ${placeholderSections.length - 1}.`,
-    );
-  }
-
-  return `${placeholderSections[0]}${sharedThemeTokens.trim()}${placeholderSections[1]}`;
-}
-
-async function buildApp({ srcDir, distDir }) {
+async function buildApp({ srcDir, distDir }, sharedThemeTokens) {
   fs.mkdirSync(distDir, { recursive: true });
 
   const result = await esbuild.build({
@@ -45,24 +33,12 @@ async function buildApp({ srcDir, distDir }) {
     minify: true,
   });
 
-  const bundledCode = result.outputFiles[0].text;
-  const safeBundledCode = bundledCode.replace(/<\/script/gi, '<\\/script');
-
-  const sharedThemeTokens = fs.readFileSync(SHARED_THEME_TOKENS_PATH, 'utf-8');
   const templatePath = `${srcDir}/mcp-app.html`;
-  const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-  const htmlWithSharedTheme = inlineSharedThemeTokens(htmlTemplate, sharedThemeTokens, templatePath);
-  const scriptTagMatches = [...htmlWithSharedTheme.matchAll(APP_SCRIPT_TAG_PATTERN)];
-  if (scriptTagMatches.length !== 1) {
-    throw new Error(
-      `Expected exactly one mcp-app.js script placeholder in ${templatePath}, found ${scriptTagMatches.length}.`,
-    );
-  }
-
-  const finalHtml = htmlWithSharedTheme.replace(
-    APP_SCRIPT_TAG_PATTERN,
-    () => `<script>\n${safeBundledCode}</script>`,
-  );
+  const finalHtml = buildAppHtmlTemplate({
+    templatePath,
+    sharedThemeTokens,
+    bundledCode: result.outputFiles[0].text,
+  });
 
   fs.writeFileSync(`${distDir}/mcp-app.html`, finalHtml);
 
@@ -70,8 +46,9 @@ async function buildApp({ srcDir, distDir }) {
 }
 
 async function build() {
+  const sharedThemeTokens = fs.readFileSync(SHARED_THEME_TOKENS_PATH, 'utf-8');
   for (const appConfig of APP_CONFIGS) {
-    await buildApp(appConfig);
+    await buildApp(appConfig, sharedThemeTokens);
   }
 }
 
