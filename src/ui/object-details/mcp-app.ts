@@ -124,8 +124,8 @@ function applyToolResult(result: ToolResult): void {
 }
 
 function render(): void {
-  metaEl.innerHTML = '';
-  highlightsEl.innerHTML = '';
+  metaEl.replaceChildren();
+  highlightsEl.replaceChildren();
   emptyEl.hidden = true;
   statusEl.classList.toggle('error', Boolean(state.errorMessage));
   metaDetailsEl.hidden = false;

@@ -33,7 +33,7 @@ export function renderResults(
 ): void {
   const { state } = renderState;
   const { resultsEl } = elements;
-  resultsEl.innerHTML = '';
+  resultsEl.replaceChildren();
   resultsEl.setAttribute('aria-busy', state.isResultsLoading || state.isDetailsLoading ? 'true' : 'false');
 
   if (state.isResultsLoading) {
@@ -138,7 +138,7 @@ export function renderDetails(
 ): void {
   const { state } = renderState;
   const { detailsEl } = elements;
-  detailsEl.innerHTML = '';
+  detailsEl.replaceChildren();
 
   if (!state.selectedObject) {
     const empty = document.createElement('div');

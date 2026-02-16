@@ -486,7 +486,7 @@ async function loadObjectDetails(objectId: number): Promise<void> {
   const token = ++state.latestDetailsToken;
   state.isDetailsLoading = true;
   renderResults();
-  detailsEl.innerHTML = '<div class="skeleton" style="height: 260px; border-radius: 8px;"></div>';
+  detailsEl.replaceChildren(createDetailsSkeleton());
   setStatus(`Loading object ${objectId}...`, false);
 
   try {
@@ -526,6 +526,14 @@ function renderDetails(): void {
       updateAddContextButton,
     },
   );
+}
+
+function createDetailsSkeleton(): HTMLDivElement {
+  const skeleton = document.createElement('div');
+  skeleton.className = 'skeleton';
+  skeleton.style.height = '260px';
+  skeleton.style.borderRadius = '8px';
+  return skeleton;
 }
 
 function updateAddContextButton(): void {
