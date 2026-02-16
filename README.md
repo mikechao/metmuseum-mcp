@@ -10,6 +10,24 @@ A Model Context Protocol (MCP) server that provides access to the Metropolitan M
 
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/ccc75a48-9b33-4a9a-8ef7-8dc3848db263)
 
+## Table of Contents
+
+- [Features](#features)
+  - [List Departments](#1-list-departments-list-departments)
+  - [Search Museum Objects](#2-search-museum-objects-search-museum-objects)
+  - [Get Museum Object](#3-get-museum-object-get-museum-object)
+  - [Open Met Explorer App](#4-open-met-explorer-app-open-met-explorer)
+  - [MCP Apps Support](#mcp-apps-support)
+- [Transports](#transports)
+  - [Streamable HTTP Transport](#streamable-http-transport)
+- [Usage with ChatGPT](#usage-with-chatgpt)
+- [Usage with Claude Desktop](#usage-with-claude-desktop)
+- [Usage with LibreChat](#usage-with-librechat)
+- [Example Queries](#example-queries)
+- [Contributing](#contributing)
+- [License](#license)
+- [Disclaimer](#disclaimer)
+
 ## Features
 
 This server provides AI models the following tools to interact with the art collection of The Met
@@ -46,7 +64,7 @@ Search for various objects in The Met based on the inputs.
   Object IDs: 436532, 789578, 436840, 438722,...
   ```
 
-### 3. Get Museum Objects (get-museum-object)
+### 3. Get Museum Object (get-museum-object)
 
 Get a specific object from The Met containing all open access data about that object, including its image (if the image is available under Open Access).
 
@@ -88,6 +106,22 @@ Recommended flow:
   - `hasImages` (boolean, default: true): Prefer objects with images.
   - `title` (boolean, default: false): Search titles only.
   - `departmentId` (number): Pre-select a department filter.
+- Output:
+  ```
+  Opens the Met Explorer app in the client UI.
+  ```
+
+### MCP Apps Support
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=kFxVjg-TYhM">
+    <img src="https://img.youtube.com/vi/kFxVjg-TYhM/maxresdefault.jpg" alt="Watch the demo" width="80%">
+  </a>
+  <br>
+  <a href="https://www.youtube.com/watch?v=kFxVjg-TYhM"><em>▶️ Click to watch the demo video</em></a>
+</p>
+
+There are now [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps) in this MCP Server. There is a UI component for the [Open Met Explorer App](#4-open-met-explorer-app-open-met-explorer) tool and the [Get Museum Object](#3-get-museum-object-get-museum-object) tool.
 
 ## Transports
 
@@ -132,16 +166,76 @@ Example:
 HOST=127.0.0.1 PORT=8080 ALLOWED_HOSTS=localhost,127.0.0.1 npx -y metmuseum-mcp --http
 ```
 
+### Usage with ChatGPT
+
+The following steps allows you to use Met Museum MCP with the web UI of ChatGPT
+
+#### 1. Enable Developer Mode in ChatGPT
+
+Settings → Apps → Advanced settings → Developer mode
+
+Additional instructions [here](https://platform.openai.com/docs/guides/developer-mode)
+
+#### 2. Run the Met Museum MCP Sever with Streamable HTTP Transport
+
+```bash
+npx -y metmuseum-mcp --http
+```
+
+By default the server will be listening on
+http://127.0.0.1:3001/mcp
+
+#### 3. Create a local tunnel to expose the MCP Server to ChatGPT
+
+Sign up and configure [ngrok](https://ngrok.com/), the free plan works.
+
+```bash
+ngrok http 3001
+```
+
+Take note of the forwarding URL.
+
+```bash
+...
+Forwarding                    https://john-joe-asdf.ngrok-free.dev -> http://localhost:3001
+...
+```
+
+#### 4. Add Met Museum MCP as a Connector to ChatGPT
+
+Open [ChatGPT Apps settings](https://chatgpt.com/#settings/Connectors)
+
+Click Apps
+
+Click Create Apps
+
+Fill out the form using the URL from step 3 as the MCP Server URL, but add `/mcp`.
+
+```
+https://john-joe-asdf.ngrok-free.dev/mcp
+```
+
+For Authentication, select 'No Auth'
+
+Tick the checkbox for 'I understand and want to continue'
+
+Then click Create.
+
+#### 5. Using the Met Museum MCP Server
+
+In the prompt input field you can use @name-of-server-from-step3 or
+In the ChatGPT UI, click the '+' button, scroll to '...more', select the newly created Met app, and enter your query.
+
 ### Usage with Claude Desktop
 
-## Via MCP Bundle (MCPB)
+#### Via MCP Bundle (MCPB)
 
 1. Download the `mcpb` file from the [Releases](https://github.com/mikechao/metmuseum-mcp/releases)
 2. Open it with Claude Desktop
    or
    Go to File -> Settings -> Extensions and drag the .mcpb file to the window to install it
 
-## Via npx
+#### Via npx
 
 Add this to your `claude_desktop_config.json`:
 
@@ -177,6 +271,7 @@ mcpServers:
 Here some questions you can ask the AI model when this server in connected:
 
 ```
+Can you help me explore the works of Vincent Van Gogh?
 Can you help me explore the Met?
 Can you show me a few painting from the Asian Art department?
 Can you find the painting titled "Corridor in the Asylum"?
