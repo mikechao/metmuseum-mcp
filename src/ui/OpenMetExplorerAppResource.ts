@@ -11,14 +11,20 @@ export class OpenMetExplorerAppResource {
   public readonly uri: string = 'ui://met/explorer.html';
   public readonly mimeType: string = 'text/html;profile=mcp-app';
 
+  private readonly appVersion: string;
   private htmlCache?: string;
+
+  constructor(appVersion: string) {
+    this.appVersion = appVersion;
+  }
 
   public async getHtml(): Promise<string> {
     if (this.htmlCache) {
       return this.htmlCache;
     }
 
-    this.htmlCache = await resolveAppHtml(uiHtmlPath, distUiHtmlPath);
+    const html = await resolveAppHtml(uiHtmlPath, distUiHtmlPath);
+    this.htmlCache = html.replaceAll('__MET_MUSEUM_APP_VERSION__', this.appVersion);
     return this.htmlCache;
   }
 }

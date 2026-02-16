@@ -52,8 +52,8 @@ export function createMetMuseumServer(): McpServer {
   const search = new SearchMuseumObjectsTool(metMuseumApiClient);
   const getMuseumObject = new GetObjectTool(metMuseumApiClient);
   const openMetExplorer = new OpenMetExplorerTool();
-  const openMetExplorerAppResource = new OpenMetExplorerAppResource();
-  const getMuseumObjectAppResource = new GetMuseumObjectAppResource();
+  const openMetExplorerAppResource = new OpenMetExplorerAppResource(SERVER_VERSION);
+  const getMuseumObjectAppResource = new GetMuseumObjectAppResource(SERVER_VERSION);
 
   const listResourcesHandler = new ListResourcesHandler(
     [openMetExplorerAppResource, getMuseumObjectAppResource],

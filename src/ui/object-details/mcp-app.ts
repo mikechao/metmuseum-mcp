@@ -36,9 +36,10 @@ const imageEl = getElementById('object-image', HTMLImageElement);
 const objectLinkEl = getElementById('object-link', HTMLAnchorElement);
 const statusEl = getElementById('status', HTMLDivElement);
 const emptyEl = getElementById('empty', HTMLDivElement);
+const APP_VERSION = '__MET_MUSEUM_APP_VERSION__';
 
 // Hosts handle width differently; sync height only to avoid narrow-width lock-in.
-const app = new App({ name: 'met-object-details-app', version: '0.1.0' }, {}, { autoResize: false });
+const app = new App({ name: 'met-object-details-app', version: APP_VERSION }, {}, { autoResize: false });
 let stopHeightSync: (() => void) | null = null;
 
 app.onhostcontextchanged = (contextUpdate) => {
