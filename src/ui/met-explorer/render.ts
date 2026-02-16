@@ -246,6 +246,9 @@ function getSelectedImageUrl(
   if (objectData.primaryImage) {
     return objectData.primaryImage;
   }
+  if (objectData.primaryImageSmall) {
+    return objectData.primaryImageSmall;
+  }
   return null;
 }
 

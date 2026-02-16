@@ -43,10 +43,11 @@ export class GetObjectTool {
 
       let imageContent: ImageContent | null = null;
       let imageFetchFailed = false;
+      const preferredImageUrl = data.primaryImageSmall || data.primaryImage;
 
-      if (returnImage && data.primaryImageSmall) {
+      if (returnImage && preferredImageUrl) {
         try {
-          const image = await this.apiClient.getImageAsBase64(data.primaryImageSmall);
+          const image = await this.apiClient.getImageAsBase64(preferredImageUrl);
           imageContent = {
             type: 'image',
             data: image.data,
