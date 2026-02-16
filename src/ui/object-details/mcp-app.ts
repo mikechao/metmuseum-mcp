@@ -33,6 +33,7 @@ const metaEl = getElementById('meta', HTMLDListElement);
 const imageWrapEl = getElementById('image-wrap', HTMLDivElement);
 const imageAmbientEl = getElementById('image-ambient', HTMLDivElement);
 const imageEl = getElementById('object-image', HTMLImageElement);
+const imageFallbackEl = getElementById('image-fallback', HTMLDivElement);
 const objectLinkEl = getElementById('object-link', HTMLAnchorElement);
 const statusEl = getElementById('status', HTMLDivElement);
 const emptyEl = getElementById('empty', HTMLDivElement);
@@ -63,6 +64,11 @@ app.onteardown = async () => {
 };
 
 metaDetailsEl.addEventListener('toggle', updateMetaSummary);
+imageEl.addEventListener('error', handleImageLoadError);
+imageEl.addEventListener('load', () => {
+  imageEl.hidden = false;
+  imageFallbackEl.hidden = true;
+});
 
 async function init(): Promise<void> {
   try {
@@ -126,7 +132,7 @@ function render(): void {
 
   if (state.errorMessage) {
     titleEl.textContent = 'Unable to load object details';
-    imageWrapEl.hidden = true;
+    hideImagePresentation();
     highlightsEl.hidden = true;
     metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
@@ -138,7 +144,7 @@ function render(): void {
 
   if (!state.object) {
     titleEl.textContent = 'Waiting for object details...';
-    imageWrapEl.hidden = true;
+    hideImagePresentation();
     highlightsEl.hidden = true;
     metaDetailsEl.hidden = true;
     objectLinkEl.hidden = true;
@@ -155,15 +161,11 @@ function render(): void {
 
   const imageUrl = getImageUrl(objectData);
   if (imageUrl) {
-    imageEl.src = imageUrl;
-    imageAmbientEl.style.backgroundImage = `url("${imageUrl}")`;
-    imageWrapEl.hidden = false;
+    showImage(imageUrl);
     metaDetailsEl.open = false;
   }
   else {
-    imageEl.removeAttribute('src');
-    imageAmbientEl.style.backgroundImage = '';
-    imageWrapEl.hidden = true;
+    showImageFallback('No image available for this object.');
     metaDetailsEl.open = true;
   }
 
@@ -286,6 +288,42 @@ function getObjectLinkUrl(objectData: ObjectData): string | null {
   }
 
   return `https://www.metmuseum.org/art/collection/search/${objectId}`;
+}
+
+function hideImagePresentation(): void {
+  imageEl.hidden = true;
+  imageEl.removeAttribute('src');
+  imageFallbackEl.hidden = true;
+  imageWrapEl.hidden = true;
+  imageAmbientEl.style.backgroundImage = '';
+}
+
+function showImage(imageUrl: string): void {
+  imageFallbackEl.hidden = true;
+  imageEl.hidden = false;
+  imageEl.src = imageUrl;
+  imageWrapEl.hidden = false;
+  imageAmbientEl.style.backgroundImage = `url("${imageUrl}")`;
+}
+
+function showImageFallback(message: string): void {
+  imageEl.hidden = true;
+  imageEl.removeAttribute('src');
+  imageFallbackEl.textContent = message;
+  imageFallbackEl.hidden = false;
+  imageWrapEl.hidden = false;
+  imageAmbientEl.style.backgroundImage = '';
+}
+
+function handleImageLoadError(): void {
+  showImageFallback('Image unavailable for this object.');
+  const objectId = getObjectIdLabel(state.object);
+  if (objectId) {
+    setStatus(`Loaded object ${objectId}, but image is unavailable.`, false);
+    return;
+  }
+
+  setStatus('Object details loaded, but image is unavailable.', false);
 }
 
 function setStatus(message: string, isError: boolean): void {

@@ -105,6 +105,21 @@
           max-width 160ms ease;
       }
 
+      .image-fallback {
+        width: min(98%, 1080px);
+        max-height: clamp(340px, 66vh, 860px);
+        min-height: clamp(240px, 50vh, 520px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+        text-align: center;
+        color: var(--muted);
+        background: var(--placeholder);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
       .body {
         padding: 14px;
       }
@@ -249,6 +264,11 @@
           max-height: min(64vh, 560px);
         }
 
+        .image-fallback {
+          max-height: min(64vh, 560px);
+          min-height: min(40vh, 300px);
+        }
+
         .body {
           padding: 12px;
         }
@@ -268,6 +288,7 @@
           <div id="image-ambient" class="image-ambient" aria-hidden="true"></div>
           <div class="image-stage">
             <img id="object-image" alt="Artwork image" />
+            <div id="image-fallback" class="image-fallback" hidden>Image unavailable for this object.</div>
           </div>
         </div>
         <div class="body">

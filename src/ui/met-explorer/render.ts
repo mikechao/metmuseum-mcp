@@ -82,13 +82,13 @@ export function renderResults(
       const img = document.createElement('img');
       img.src = result.primaryImageSmall;
       img.alt = result.title;
+      img.addEventListener('error', () => {
+        replaceCardImageWithPlaceholder(card, img);
+      }, { once: true });
       card.append(img);
     }
     else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'skeleton';
-      placeholder.style.height = '150px';
-      card.append(placeholder);
+      card.append(createResultImagePlaceholder());
     }
 
     const meta = document.createElement('div');
@@ -180,7 +180,29 @@ export function renderDetails(
     imageActions.className = 'detail-image-actions';
     imageActions.append(viewFullButton);
 
-    imageWrap.append(image, imageActions);
+    const imageFallback = document.createElement('div');
+    imageFallback.className = 'detail-image-placeholder';
+    imageFallback.textContent = 'Image unavailable for this object.';
+    imageFallback.hidden = true;
+
+    image.addEventListener('error', () => {
+      state.isImageExpanded = false;
+      image.remove();
+      imageFallback.hidden = false;
+      imageActions.hidden = true;
+      callbacks.setStatus('Image unavailable for this object. Metadata is still available.', false);
+    }, { once: true });
+
+    imageWrap.append(image, imageFallback, imageActions);
+    detailsEl.append(imageWrap);
+  }
+  else {
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'detail-image-wrap';
+    const imageFallback = document.createElement('div');
+    imageFallback.className = 'detail-image-placeholder';
+    imageFallback.textContent = 'No image available for this object.';
+    imageWrap.append(imageFallback);
     detailsEl.append(imageWrap);
   }
 
@@ -260,4 +282,23 @@ function objectIdEquals(
     return false;
   }
   return String(left) === String(right);
+}
+
+function createResultImagePlaceholder(): HTMLDivElement {
+  const placeholder = document.createElement('div');
+  placeholder.className = 'result-image-placeholder';
+  placeholder.textContent = 'No image available';
+  return placeholder;
+}
+
+function replaceCardImageWithPlaceholder(
+  card: HTMLButtonElement,
+  image: HTMLImageElement,
+): void {
+  image.remove();
+  if (card.querySelector('.result-image-placeholder')) {
+    return;
+  }
+
+  card.prepend(createResultImagePlaceholder());
 }
