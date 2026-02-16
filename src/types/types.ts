@@ -1,9 +1,8 @@
 import z from 'zod';
+import type { Resource } from '@modelcontextprotocol/sdk/types.js';
 
-export interface AppResource {
-  uri: string;
+export interface AppResource extends Resource {
   mimeType: string;
-  name: string;
   getHtml: () => Promise<string>;
 }
 
