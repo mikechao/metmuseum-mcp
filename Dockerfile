@@ -11,6 +11,7 @@ RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 # Copy TypeScript configuration and source code
 COPY tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
 
 # Build the project
 RUN pnpm run build
