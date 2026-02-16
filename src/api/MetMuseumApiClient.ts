@@ -9,19 +9,28 @@ import {
 } from '../types/types.js';
 import { metMuseumRateLimiter } from '../utils/RateLimiter.js';
 
-function normalizeNulls<T>(value: T): T {
+type DeepNullToUndefined<T> =
+  T extends null
+    ? undefined
+    : T extends readonly (infer U)[]
+      ? Array<DeepNullToUndefined<U>>
+      : T extends object
+        ? { [K in keyof T]: DeepNullToUndefined<T[K]> }
+        : T;
+
+function normalizeNulls<T>(value: T): DeepNullToUndefined<T> {
   if (value === null) {
-    return undefined as T;
+    return undefined as DeepNullToUndefined<T>;
   }
   if (Array.isArray(value)) {
-    return value.map(item => normalizeNulls(item)) as T;
+    return value.map(item => normalizeNulls(item)) as DeepNullToUndefined<T>;
   }
   if (typeof value === 'object' && value !== null) {
     return Object.fromEntries(
       Object.entries(value).map(([key, val]) => [key, normalizeNulls(val)]),
-    ) as T;
+    ) as DeepNullToUndefined<T>;
   }
-  return value;
+  return value as DeepNullToUndefined<T>;
 }
 
 function getMetApiTimeoutMs(): number {
