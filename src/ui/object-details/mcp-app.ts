@@ -290,6 +290,33 @@ function getObjectLinkUrl(objectData: ObjectData): string | null {
   return `https://www.metmuseum.org/art/collection/search/${objectId}`;
 }
 
+const ALLOWED_IMAGE_PROTOCOLS = new Set(['https:', 'blob:']);
+const DATA_IMAGE_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i;
+
+function toSafeImageUrl(rawImageUrl: string): string | null {
+  const value = rawImageUrl.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('data:')) {
+    return DATA_IMAGE_URL_PATTERN.test(value) ? value : null;
+  }
+
+  try {
+    const parsed = new URL(value, window.location.href);
+    return ALLOWED_IMAGE_PROTOCOLS.has(parsed.protocol) ? parsed.href : null;
+  }
+  catch {
+    return null;
+  }
+}
+
+function toSafeCssUrl(rawValue: string): string {
+  const escaped = rawValue.replace(/["\\\n\r\f]/g, '\\$&');
+  return `url("${escaped}")`;
+}
+
 function hideImagePresentation(): void {
   imageEl.hidden = true;
   imageEl.removeAttribute('src');
@@ -299,11 +326,17 @@ function hideImagePresentation(): void {
 }
 
 function showImage(imageUrl: string): void {
+  const safeImageUrl = toSafeImageUrl(imageUrl);
+  if (!safeImageUrl) {
+    showImageFallback('Image unavailable for this object.');
+    return;
+  }
+
   imageFallbackEl.hidden = true;
   imageEl.hidden = false;
-  imageEl.src = imageUrl;
+  imageEl.src = safeImageUrl;
   imageWrapEl.hidden = false;
-  imageAmbientEl.style.backgroundImage = `url("${imageUrl}")`;
+  imageAmbientEl.style.backgroundImage = toSafeCssUrl(safeImageUrl);
 }
 
 function showImageFallback(message: string): void {
