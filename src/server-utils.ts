@@ -9,17 +9,11 @@ export async function startServer(
   createServer: () => McpServer,
   isHttp: boolean = false,
 ): Promise<void> {
-  try {
-    if (isHttp) {
-      await startStreamableHttpServer(createServer);
-    }
-    else {
-      await startStdioServer(createServer);
-    }
+  if (isHttp) {
+    await startStreamableHttpServer(createServer);
   }
-  catch (error) {
-    console.error('[MCP Server Error]', error);
-    process.exit(1);
+  else {
+    await startStdioServer(createServer);
   }
 }
 
