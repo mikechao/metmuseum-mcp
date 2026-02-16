@@ -40,6 +40,14 @@ function getMetApiTimeoutMs(): number {
   return parsedTimeout;
 }
 
+function createUnexpectedResponseError(endpointName: string): MetMuseumApiError {
+  return new MetMuseumApiError(
+    `The Met Museum API returned an unexpected ${endpointName} response. Please try again later.`,
+    undefined,
+    true,
+  );
+}
+
 export class MetMuseumApiError extends Error {
   public readonly status: number | undefined;
   public readonly isUserFriendly: boolean;
@@ -134,7 +142,7 @@ export class MetMuseumApiClient {
     const normalizedData = normalizeNulls(rawData);
     const parseResult = ObjectResponseSchema.safeParse(normalizedData);
     if (!parseResult.success) {
-      throw new MetMuseumApiError(`Invalid object response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
+      throw createUnexpectedResponseError('object');
     }
     return parseResult.data;
   }
@@ -197,7 +205,7 @@ export class MetMuseumApiClient {
     const data = await this.fetchJson(url);
     const parseResult = schema.safeParse(data);
     if (!parseResult.success) {
-      throw new MetMuseumApiError(`Invalid ${endpointName} response shape: ${JSON.stringify(parseResult.error.issues, null, 2)}`);
+      throw createUnexpectedResponseError(endpointName);
     }
     return parseResult.data;
   }
