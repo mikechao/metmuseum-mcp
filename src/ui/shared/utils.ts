@@ -76,7 +76,7 @@ export function getImageContent(
 // UI, so lightweight runtime shape-checks are sufficient here.
 // ============================================================================
 
-function isNonNullObject(value: unknown): value is Record<string, unknown> {
+export function isNonNullObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 

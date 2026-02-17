@@ -8,7 +8,7 @@
  * it reaches the UI, so lightweight runtime shape-checks are sufficient here.
  */
 import type { ToolResult } from '../shared/types.js';
-import { extractText } from '../shared/utils.js';
+import { extractText, isNonNullObject } from '../shared/utils.js';
 
 export interface Department {
   departmentId: number;
@@ -28,10 +28,6 @@ export interface ExplorerLaunchState {
   hasImages?: boolean;
   title?: boolean;
   departmentId?: number;
-}
-
-function isNonNullObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
