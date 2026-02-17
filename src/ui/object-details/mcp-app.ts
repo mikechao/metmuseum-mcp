@@ -286,8 +286,11 @@ function getImageUrl(objectData: ObjectData): string | null {
 }
 
 function getObjectLinkUrl(objectData: ObjectData): string | null {
-  if (typeof objectData.objectURL === 'string' && objectData.objectURL.trim()) {
-    return objectData.objectURL.trim();
+  if (typeof objectData.objectURL === 'string') {
+    const safeObjectLinkUrl = toSafeObjectLinkUrl(objectData.objectURL);
+    if (safeObjectLinkUrl) {
+      return safeObjectLinkUrl;
+    }
   }
 
   const objectId = getObjectIdLabel(objectData);
@@ -296,6 +299,21 @@ function getObjectLinkUrl(objectData: ObjectData): string | null {
   }
 
   return `https://www.metmuseum.org/art/collection/search/${objectId}`;
+}
+
+function toSafeObjectLinkUrl(rawObjectUrl: string): string | null {
+  const value = rawObjectUrl.trim();
+  if (!value || !/^https:\/\//i.test(value)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' ? parsed.href : null;
+  }
+  catch {
+    return null;
+  }
 }
 
 function toSafeCssUrl(rawValue: string): string {
