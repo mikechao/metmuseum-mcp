@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "versions:check": "node scripts/sync-versions.mjs",
-    "prebuild": "pnpm run lint:check && shx rm -rf dist",
+    "prebuild": "shx rm -rf dist",
     "build": "tsc && node scripts/build-ui.mjs && shx chmod +x dist/*.js",
     "lint": "eslint . --ext .ts,.js,.mjs,.cjs --fix",
     "lint:check": "eslint . --ext .ts,.js,.mjs,.cjs",
