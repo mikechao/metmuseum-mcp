@@ -1,5 +1,5 @@
 import type { AppState } from './state.js';
-import { errorToMessage, stringOrFallback } from '../shared/utils.js';
+import { errorToMessage, stringOrFallback, toSafeImageUrl } from '../shared/utils.js';
 
 export interface RenderState {
   state: Pick<
@@ -78,9 +78,13 @@ export function renderResults(
       });
     });
 
-    if (result.primaryImageSmall) {
+    const safeThumbnailUrl = result.primaryImageSmall
+      ? toSafeImageUrl(result.primaryImageSmall)
+      : null;
+
+    if (safeThumbnailUrl) {
       const img = document.createElement('img');
-      img.src = result.primaryImageSmall;
+      img.src = safeThumbnailUrl;
       img.alt = result.title;
       img.addEventListener('error', () => {
         replaceCardImageWithPlaceholder(card, img);
@@ -262,15 +266,25 @@ function getSelectedImageUrl(
   state: RenderState['state'],
   objectData: NonNullable<RenderState['state']['selectedObject']>,
 ): string | null {
-  if (state.selectedImageData && state.selectedImageMimeType) {
-    return `data:${state.selectedImageMimeType};base64,${state.selectedImageData}`;
+  const candidateImageUrls = [
+    state.selectedImageData && state.selectedImageMimeType
+      ? `data:${state.selectedImageMimeType};base64,${state.selectedImageData}`
+      : null,
+    objectData.primaryImage,
+    objectData.primaryImageSmall,
+  ];
+
+  for (const candidateImageUrl of candidateImageUrls) {
+    if (typeof candidateImageUrl !== 'string') {
+      continue;
+    }
+
+    const safeImageUrl = toSafeImageUrl(candidateImageUrl);
+    if (safeImageUrl) {
+      return safeImageUrl;
+    }
   }
-  if (objectData.primaryImage) {
-    return objectData.primaryImage;
-  }
-  if (objectData.primaryImageSmall) {
-    return objectData.primaryImageSmall;
-  }
+
   return null;
 }
 

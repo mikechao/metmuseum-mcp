@@ -9,6 +9,7 @@ import {
   parseObjectResult,
   startHeightSync,
   stringOrFallback,
+  toSafeImageUrl,
 } from '../shared/utils.js';
 
 interface AppState {
@@ -288,28 +289,6 @@ function getObjectLinkUrl(objectData: ObjectData): string | null {
   }
 
   return `https://www.metmuseum.org/art/collection/search/${objectId}`;
-}
-
-const ALLOWED_IMAGE_PROTOCOLS = new Set(['https:', 'blob:']);
-const DATA_IMAGE_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i;
-
-function toSafeImageUrl(rawImageUrl: string): string | null {
-  const value = rawImageUrl.trim();
-  if (!value) {
-    return null;
-  }
-
-  if (value.startsWith('data:')) {
-    return DATA_IMAGE_URL_PATTERN.test(value) ? value : null;
-  }
-
-  try {
-    const parsed = new URL(value, window.location.href);
-    return ALLOWED_IMAGE_PROTOCOLS.has(parsed.protocol) ? parsed.href : null;
-  }
-  catch {
-    return null;
-  }
 }
 
 function toSafeCssUrl(rawValue: string): string {

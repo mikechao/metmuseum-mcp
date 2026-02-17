@@ -229,6 +229,28 @@ export function errorToMessage(error: unknown): string {
   return String(error);
 }
 
+const ALLOWED_IMAGE_PROTOCOLS = new Set(['https:', 'blob:']);
+const DATA_IMAGE_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i;
+
+export function toSafeImageUrl(rawImageUrl: string): string | null {
+  const value = rawImageUrl.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('data:')) {
+    return DATA_IMAGE_URL_PATTERN.test(value) ? value : null;
+  }
+
+  try {
+    const parsed = new URL(value, window.location.href);
+    return ALLOWED_IMAGE_PROTOCOLS.has(parsed.protocol) ? parsed.href : null;
+  }
+  catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // Height Sync
 // ============================================================================
