@@ -17,7 +17,7 @@ A Model Context Protocol (MCP) server that provides access to the Metropolitan M
   - [Search Museum Objects](#2-search-museum-objects-search-museum-objects)
   - [Get Museum Object](#3-get-museum-object-get-museum-object)
   - [Open Met Explorer App](#4-open-met-explorer-app-open-met-explorer)
-  - [MCP Apps Support](#mcp-apps-support)
+- [MCP Apps](#mcp-apps)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
@@ -115,7 +115,7 @@ Recommended flow:
   Opens the Met Explorer app in the client UI.
   ```
 
-### MCP Apps Support
+## MCP Apps
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=kFxVjg-TYhM">
