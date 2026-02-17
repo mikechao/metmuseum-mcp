@@ -18,19 +18,23 @@ A Model Context Protocol (MCP) server that provides access to the Metropolitan M
   - [Get Museum Object](#3-get-museum-object-get-museum-object)
   - [Open Met Explorer App](#4-open-met-explorer-app-open-met-explorer)
   - [MCP Apps Support](#mcp-apps-support)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
 - [Transports](#transports)
   - [Streamable HTTP Transport](#streamable-http-transport)
 - [Usage with ChatGPT](#usage-with-chatgpt)
 - [Usage with Claude Desktop](#usage-with-claude-desktop)
 - [Usage with LibreChat](#usage-with-librechat)
 - [Example Queries](#example-queries)
+- [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Disclaimer](#disclaimer)
 
 ## Features
 
-This server provides AI models the following tools to interact with the art collection of The Met
+This server provides AI models the following tools to interact with the art collection of The Met:
 
 ### 1. List Departments (list-departments)
 
@@ -123,6 +127,34 @@ Recommended flow:
 
 There are now [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps) in this MCP Server. There is a UI component for the [Open Met Explorer App](#4-open-met-explorer-app-open-met-explorer) tool and the [Get Museum Object](#3-get-museum-object-get-museum-object) tool.
 
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) v18 or later
+
+## Quick Start
+
+Run the server directly with `npx` — no install required:
+
+```bash
+npx -y metmuseum-mcp
+```
+
+This starts the server using **stdio transport**, which is what most MCP desktop clients expect.
+
+For client-specific setup, see:
+
+- [Usage with Claude Desktop](#usage-with-claude-desktop)
+- [Usage with ChatGPT](#usage-with-chatgpt) (requires [Streamable HTTP transport](#streamable-http-transport))
+- [Usage with LibreChat](#usage-with-librechat)
+
+## Configuration
+
+The following environment variable applies to **all transports**:
+
+| Variable             | Default | Description                                                              |
+| -------------------- | ------- | ------------------------------------------------------------------------ |
+| `MET_API_TIMEOUT_MS` | `10000` | Timeout in milliseconds for outbound requests to the Met Collection API. |
+
 ## Transports
 
 This server supports two transports:
@@ -151,14 +183,13 @@ The server listens on:
 http://localhost:3001/mcp
 ```
 
-You can control server behavior with environment variables:
+You can control HTTP server behavior with environment variables:
 
-| Variable             | Default               | Description                                                                                               |
-| -------------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `PORT`               | `3001`                | HTTP port used by the Streamable HTTP server.                                                             |
-| `HOST`               | `127.0.0.1`           | Network interface the HTTP server binds to.                                                               |
-| `ALLOWED_HOSTS`      | `localhost,127.0.0.1` | Comma-separated host allowlist for host header validation (example: `localhost,127.0.0.1,my-domain.com`). |
-| `MET_API_TIMEOUT_MS` | `10000`               | Timeout in milliseconds for outbound requests to the Met Collection API.                                  |
+| Variable        | Default               | Description                                                                                               |
+| --------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `PORT`          | `3001`                | HTTP port used by the Streamable HTTP server.                                                             |
+| `HOST`          | `127.0.0.1`           | Network interface the HTTP server binds to.                                                               |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated host allowlist for host header validation (example: `localhost,127.0.0.1,my-domain.com`). |
 
 Example:
 
@@ -166,17 +197,17 @@ Example:
 HOST=127.0.0.1 PORT=8080 ALLOWED_HOSTS=localhost,127.0.0.1 npx -y metmuseum-mcp --http
 ```
 
-### Usage with ChatGPT
+## Usage with ChatGPT
 
-The following steps allows you to use Met Museum MCP with the web UI of ChatGPT
+The following steps allow you to use Met Museum MCP with the web UI of ChatGPT
 
-#### 1. Enable Developer Mode in ChatGPT
+### 1. Enable Developer Mode in ChatGPT
 
 Settings → Apps → Advanced settings → Developer mode
 
 Additional instructions [here](https://platform.openai.com/docs/guides/developer-mode)
 
-#### 2. Run the Met Museum MCP Sever with Streamable HTTP Transport
+### 2. Run the Met Museum MCP Server with Streamable HTTP Transport
 
 ```bash
 npx -y metmuseum-mcp --http
@@ -185,7 +216,7 @@ npx -y metmuseum-mcp --http
 By default the server will be listening on
 http://127.0.0.1:3001/mcp
 
-#### 3. Create a local tunnel to expose the MCP Server to ChatGPT
+### 3. Create a local tunnel to expose the MCP Server to ChatGPT
 
 Sign up and configure [ngrok](https://ngrok.com/), the free plan works.
 
@@ -201,7 +232,7 @@ Forwarding                    https://john-joe-asdf.ngrok-free.dev -> http://loc
 ...
 ```
 
-#### 4. Add Met Museum MCP as a Connector to ChatGPT
+### 4. Add Met Museum MCP as a Connector to ChatGPT
 
 Open [ChatGPT Apps settings](https://chatgpt.com/#settings/Connectors)
 
@@ -221,21 +252,21 @@ Tick the checkbox for 'I understand and want to continue'
 
 Then click Create.
 
-#### 5. Using the Met Museum MCP Server
+### 5. Using the Met Museum MCP Server
 
 In the prompt input field you can use @name-of-server-from-step3 or
 In the ChatGPT UI, click the '+' button, scroll to '...more', select the newly created Met app, and enter your query.
 
-### Usage with Claude Desktop
+## Usage with Claude Desktop
 
-#### Via MCP Bundle (MCPB)
+### Via MCP Bundle (MCPB)
 
 1. Download the `mcpb` file from the [Releases](https://github.com/mikechao/metmuseum-mcp/releases)
 2. Open it with Claude Desktop
    or
    Go to File -> Settings -> Extensions and drag the .mcpb file to the window to install it
 
-#### Via npx
+### Via npx
 
 Add this to your `claude_desktop_config.json`:
 
@@ -253,7 +284,7 @@ Add this to your `claude_desktop_config.json`:
 }
 ```
 
-### Usage with LibreChat
+## Usage with LibreChat
 
 Add the following in your `librechat.yaml`
 
@@ -266,23 +297,19 @@ mcpServers:
       - metmuseum-mcp
 ```
 
-## Example queries
+## Example Queries
 
-Here some questions you can ask the AI model when this server in connected:
+Here are some questions you can ask the AI model when this server is connected:
 
 ```
 Can you help me explore the works of Vincent Van Gogh?
 Can you help me explore the Met?
-Can you show me a few painting from the Asian Art department?
+Can you show me a few paintings from the Asian Art department?
 Can you find the painting titled "Corridor in the Asylum"?
 Can you find any art that has "cat" in the title or features "cats"?
 ```
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### Development
+## Development
 
 This project uses `pnpm` for local development and CI.
 
@@ -294,6 +321,10 @@ pnpm run check
 ```
 
 For non-interactive shells/CI runners, use `CI=true pnpm install --frozen-lockfile`.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
