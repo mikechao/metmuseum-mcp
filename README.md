@@ -190,7 +190,7 @@ http://127.0.0.1:3001/mcp
 Sign up and configure [ngrok](https://ngrok.com/), the free plan works.
 
 ```bash
-ngrok http 3001
+ngrok http 3001 --host-header=rewrite http://127.0.0.1:3001
 ```
 
 Take note of the forwarding URL.
