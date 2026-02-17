@@ -19,6 +19,12 @@ export const DEFAULT_MET_API_TIMEOUT_MS = 10_000;
  */
 export const MET_API_RATE_LIMIT_PER_SECOND = 80;
 
+/**
+ * Default cache TTL for the departments list.
+ * Departments change rarely, so keeping this warm reduces explorer cold starts.
+ */
+export const DEFAULT_DEPARTMENTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 // ============================================================================
 // Search & Pagination Defaults
 // ============================================================================

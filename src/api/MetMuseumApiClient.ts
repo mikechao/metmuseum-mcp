@@ -1,7 +1,10 @@
 import type z from 'zod';
 import { Buffer } from 'node:buffer';
 import process from 'node:process';
-import { DEFAULT_MET_API_TIMEOUT_MS } from '../constants.js';
+import {
+  DEFAULT_DEPARTMENTS_CACHE_TTL_MS,
+  DEFAULT_MET_API_TIMEOUT_MS,
+} from '../constants.js';
 import {
   DepartmentsSchema,
   ObjectResponseSchema,
@@ -47,6 +50,22 @@ function getMetApiTimeoutMs(): number {
   }
 
   return parsedTimeout;
+}
+
+function getDepartmentsCacheTtlMs(): number {
+  const rawCacheTtl = process.env.MET_DEPARTMENTS_CACHE_TTL_MS;
+  if (!rawCacheTtl) {
+    return DEFAULT_DEPARTMENTS_CACHE_TTL_MS;
+  }
+
+  const parsedCacheTtl = Number.parseInt(rawCacheTtl, 10);
+  if (!Number.isFinite(parsedCacheTtl) || parsedCacheTtl < 0) {
+    // Note: Silently use default TTL. Invalid configuration is a developer
+    // error and logging would leak implementation details in stdio mode.
+    return DEFAULT_DEPARTMENTS_CACHE_TTL_MS;
+  }
+
+  return parsedCacheTtl;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -112,12 +131,32 @@ export class MetMuseumApiClient {
   private readonly searchUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/search';
   private readonly objectBaseUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/objects/';
   private readonly requestTimeoutMs: number = getMetApiTimeoutMs();
+  private readonly departmentsCacheTtlMs: number = getDepartmentsCacheTtlMs();
   private readonly transientRetryCount: number = 1;
   private readonly transientRetryBackoffMs: number = 250;
+  private departmentsCacheExpiresAt: number = 0;
+  private departmentsCache?: z.infer<typeof DepartmentsSchema>['departments'];
+  private departmentsRequestInFlight?: Promise<z.infer<typeof DepartmentsSchema>['departments']>;
 
   public async listDepartments(): Promise<z.infer<typeof DepartmentsSchema>['departments']> {
-    const data = await this.fetchAndParse(this.departmentsUrl, DepartmentsSchema, 'departments');
-    return data.departments;
+    const now = Date.now();
+    if (this.departmentsCache && now < this.departmentsCacheExpiresAt) {
+      return this.departmentsCache;
+    }
+
+    if (!this.departmentsRequestInFlight) {
+      this.departmentsRequestInFlight = this.fetchAndParse(this.departmentsUrl, DepartmentsSchema, 'departments')
+        .then((data) => {
+          this.departmentsCache = data.departments;
+          this.departmentsCacheExpiresAt = Date.now() + this.departmentsCacheTtlMs;
+          return data.departments;
+        })
+        .finally(() => {
+          this.departmentsRequestInFlight = undefined;
+        });
+    }
+
+    return await this.departmentsRequestInFlight;
   }
 
   public async searchObjects({
