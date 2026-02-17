@@ -8,7 +8,7 @@ import { DEFAULT_SEARCH_TOOL_PAGE_SIZE, MAX_SEARCH_PAGE_SIZE } from '../constant
 type SearchMuseumObjectsStructuredContent = z.infer<typeof SearchMuseumObjectsStructuredContentSchema>;
 
 const SearchInputBaseSchema = z.object({
-  q: z.string().describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
+  q: z.string().trim().min(1, 'The search query (q) must not be empty.').describe(`The search query, Returns a listing of all Object IDs for objects that contain the search query within the object's data`),
   hasImages: z.boolean().optional().default(false).describe(`Only returns objects that have images`),
   title: z.boolean().optional().default(false).describe(`This should be set to true if you want to search for objects by title`),
   isHighlight: z.boolean().optional().default(false).describe(`Only returns objects designated as highlights`),
@@ -63,10 +63,17 @@ export class SearchMuseumObjectsTool {
     try {
       const parsedInput = SearchInputSchema.safeParse(input);
       if (!parsedInput.success) {
+        const validationMessage = parsedInput.error.issues
+          .map((issue) => {
+            const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
+            return `${path}${issue.message}`;
+          })
+          .join(' ');
+
         return {
           content: [{
             type: 'text',
-            text: 'Please provide both dateBegin and dateEnd when filtering by date range.',
+            text: validationMessage || 'Invalid search input.',
           }],
           isError: true,
         };
