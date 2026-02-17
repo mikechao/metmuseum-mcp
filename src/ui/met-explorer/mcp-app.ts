@@ -453,6 +453,7 @@ async function hydrateObjects(objectIds: number[], token: number): Promise<Hydra
         };
       }
       catch {
+        // Safe in JS: this synchronous increment runs to completion on the single event loop thread.
         failedCount += 1;
       }
     },

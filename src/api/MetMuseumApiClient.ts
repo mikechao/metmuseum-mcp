@@ -49,6 +49,10 @@ function getMetApiTimeoutMs(): number {
   return parsedTimeout;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function isMetApiDebugEnabled(): boolean {
   const rawDebug = process.env.MET_API_DEBUG;
   if (!rawDebug) {
@@ -108,6 +112,8 @@ export class MetMuseumApiClient {
   private readonly searchUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/search';
   private readonly objectBaseUrl: string = 'https://collectionapi.metmuseum.org/public/collection/v1/objects/';
   private readonly requestTimeoutMs: number = getMetApiTimeoutMs();
+  private readonly transientRetryCount: number = 1;
+  private readonly transientRetryBackoffMs: number = 250;
 
   public async listDepartments(): Promise<z.infer<typeof DepartmentsSchema>['departments']> {
     const data = await this.fetchAndParse(this.departmentsUrl, DepartmentsSchema, 'departments');
@@ -202,9 +208,7 @@ export class MetMuseumApiClient {
   public async getImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
     let response: Response;
     try {
-      response = await metMuseumRateLimiter.fetch(imageUrl, {
-        signal: AbortSignal.timeout(this.requestTimeoutMs),
-      });
+      response = await this.fetchWithTransientRetry(imageUrl);
     }
     catch (error) {
       if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
@@ -266,9 +270,7 @@ export class MetMuseumApiClient {
   private async fetchJson(url: string): Promise<unknown> {
     let response: Response;
     try {
-      response = await metMuseumRateLimiter.fetch(url, {
-        signal: AbortSignal.timeout(this.requestTimeoutMs),
-      });
+      response = await this.fetchWithTransientRetry(url);
     }
     catch (error) {
       if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
@@ -306,5 +308,33 @@ export class MetMuseumApiClient {
       throw new MetMuseumApiError(userMessage, response.status, true);
     }
     return await response.json();
+  }
+
+  private async fetchWithTransientRetry(url: string): Promise<Response> {
+    let attempt = 0;
+    while (true) {
+      try {
+        const response = await metMuseumRateLimiter.fetch(url, {
+          signal: AbortSignal.timeout(this.requestTimeoutMs),
+        });
+
+        if (response.status === 503 && attempt < this.transientRetryCount) {
+          await sleep(this.transientRetryBackoffMs * (attempt + 1));
+          attempt += 1;
+          continue;
+        }
+
+        return response;
+      }
+      catch (error) {
+        const isTimeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+        if (isTimeout && attempt < this.transientRetryCount) {
+          await sleep(this.transientRetryBackoffMs * (attempt + 1));
+          attempt += 1;
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 }
