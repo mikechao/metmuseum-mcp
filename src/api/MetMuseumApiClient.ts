@@ -49,6 +49,40 @@ function getMetApiTimeoutMs(): number {
   return parsedTimeout;
 }
 
+function isMetApiDebugEnabled(): boolean {
+  const rawDebug = process.env.MET_API_DEBUG;
+  if (!rawDebug) {
+    return false;
+  }
+  const normalizedDebug = rawDebug.trim().toLowerCase();
+  return normalizedDebug === '1'
+    || normalizedDebug === 'true'
+    || normalizedDebug === 'yes'
+    || normalizedDebug === 'on';
+}
+
+function logSchemaValidationFailure(
+  endpointName: string,
+  parseError: z.ZodError,
+  context?: Record<string, number | string | boolean | undefined>,
+): void {
+  if (!isMetApiDebugEnabled()) {
+    return;
+  }
+
+  const payload = {
+    endpoint: endpointName,
+    context,
+    issues: parseError.issues.map(issue => ({
+      path: issue.path.join('.'),
+      code: issue.code,
+      message: issue.message,
+    })),
+  };
+
+  process.stderr.write(`[metmuseum-mcp] schema validation failed: ${JSON.stringify(payload)}\n`);
+}
+
 function createUnexpectedResponseError(endpointName: string): MetMuseumApiError {
   return new MetMuseumApiError(
     `The Met Museum API returned an unexpected ${endpointName} response. Please try again later.`,
@@ -159,6 +193,7 @@ export class MetMuseumApiClient {
     const normalizedData = normalizeNulls(rawData);
     const parseResult = ObjectResponseSchema.safeParse(normalizedData);
     if (!parseResult.success) {
+      logSchemaValidationFailure('object', parseResult.error, { objectId, url });
       throw createUnexpectedResponseError('object');
     }
     return parseResult.data;
@@ -222,6 +257,7 @@ export class MetMuseumApiClient {
     const data = await this.fetchJson(url);
     const parseResult = schema.safeParse(data);
     if (!parseResult.success) {
+      logSchemaValidationFailure(endpointName, parseResult.error, { url });
       throw createUnexpectedResponseError(endpointName);
     }
     return parseResult.data;

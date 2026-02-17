@@ -151,9 +151,10 @@ For client-specific setup, see:
 
 The following environment variable applies to **all transports**:
 
-| Variable             | Default | Description                                                              |
-| -------------------- | ------- | ------------------------------------------------------------------------ |
-| `MET_API_TIMEOUT_MS` | `10000` | Timeout in milliseconds for outbound requests to the Met Collection API. |
+| Variable             | Default | Description                                                                                                          |
+| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `MET_API_TIMEOUT_MS` | `10000` | Timeout in milliseconds for outbound requests to the Met Collection API.                                             |
+| `MET_API_DEBUG`      | `false` | Enables debug logging to `stderr` for schema validation failures (accepted truthy values: `1`, `true`, `yes`, `on`). |
 
 ## Transports
 
