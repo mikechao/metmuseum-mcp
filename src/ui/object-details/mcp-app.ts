@@ -263,16 +263,23 @@ function getTagsLabel(tags: Array<{ term?: string }> | undefined): string | unde
 }
 
 function getImageUrl(objectData: ObjectData): string | null {
-  if (state.imageData && state.imageMimeType) {
-    return `data:${state.imageMimeType};base64,${state.imageData}`;
-  }
+  const candidateImageUrls = [
+    state.imageData && state.imageMimeType
+      ? `data:${state.imageMimeType};base64,${state.imageData}`
+      : null,
+    objectData.primaryImage,
+    objectData.primaryImageSmall,
+  ];
 
-  if (objectData.primaryImage) {
-    return objectData.primaryImage;
-  }
+  for (const candidateImageUrl of candidateImageUrls) {
+    if (typeof candidateImageUrl !== 'string') {
+      continue;
+    }
 
-  if (objectData.primaryImageSmall) {
-    return objectData.primaryImageSmall;
+    const safeImageUrl = toSafeImageUrl(candidateImageUrl);
+    if (safeImageUrl) {
+      return safeImageUrl;
+    }
   }
 
   return null;
