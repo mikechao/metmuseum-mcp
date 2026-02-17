@@ -4,7 +4,6 @@ import {
   applyHostFonts,
   applyHostStyleVariables,
 } from '@modelcontextprotocol/ext-apps';
-import { GetMuseumObjectStructuredContentSchema } from '../../types/types.js';
 
 // ============================================================================
 // Context Helpers
@@ -69,12 +68,40 @@ export function getImageContent(
 
 // ============================================================================
 // Object Parsing
+//
+// NOTE: These helpers intentionally avoid importing the Zod schemas defined in
+// types/types.ts (e.g. GetMuseumObjectStructuredContentSchema). Importing those
+// schemas would pull the entire Zod library (~110 kb) into the browser bundle.
+// The server already validates structuredContent with Zod before it reaches the
+// UI, so lightweight runtime shape-checks are sufficient here.
 // ============================================================================
 
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Lightweight type guard that extracts museum object data from structuredContent
+ * without pulling in Zod. The data is already validated server-side by
+ * GetMuseumObjectStructuredContentSchema; this just verifies the expected shape.
+ */
+function extractStructuredObject(structuredContent: unknown): ObjectData | null {
+  if (!isNonNullObject(structuredContent)) {
+    return null;
+  }
+  const obj = structuredContent.object;
+  if (!isNonNullObject(obj)) {
+    return null;
+  }
+  if (!('objectID' in obj || 'title' in obj)) {
+    return null;
+  }
+  return obj as ObjectData;
+}
+
 export function parseObjectResult(result: ToolResult): ObjectData | null {
-  const parsedStructured = GetMuseumObjectStructuredContentSchema.safeParse(result?.structuredContent);
-  if (parsedStructured.success) {
-    const object = parsedStructured.data.object;
+  const object = extractStructuredObject(result?.structuredContent);
+  if (object) {
     return {
       ...object,
       tags: Array.isArray(object.tags) ? object.tags : undefined,

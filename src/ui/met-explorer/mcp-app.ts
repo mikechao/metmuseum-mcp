@@ -1,9 +1,9 @@
 import type { ToolInputParams, ToolResult } from '../shared/types.js';
+import type { ExplorerLaunchState } from './parsers.js';
 import type { AppState, LaunchParams } from './state.js';
 import type { ResultCard, SearchRequest } from './types.js';
 import { App } from '@modelcontextprotocol/ext-apps';
 import { OBJECT_HYDRATION_CONCURRENCY } from '../../constants.js';
-import { OpenMetExplorerLaunchStateSchema } from '../../types/types.js';
 import {
   applyContext,
   errorToMessage,
@@ -191,13 +191,38 @@ function setViewMode(mode: 'results' | 'detail'): void {
 // Context & Launch State
 // ============================================================================
 
+// Manual type checks instead of OpenMetExplorerLaunchStateSchema.safeParse()
+// to avoid pulling Zod (~110 kb) into the browser bundle.
 function applyLaunchState(rawState: unknown): void {
-  const parsedLaunch = OpenMetExplorerLaunchStateSchema.safeParse(rawState);
-  if (!parsedLaunch.success) {
+  if (typeof rawState !== 'object' || rawState === null) {
     return;
   }
 
-  const launch = parsedLaunch.data;
+  const raw = rawState as Record<string, unknown>;
+  const launch: ExplorerLaunchState = {};
+  let hasField = false;
+
+  if (typeof raw.q === 'string') {
+    launch.q = raw.q;
+    hasField = true;
+  }
+  if (typeof raw.hasImages === 'boolean') {
+    launch.hasImages = raw.hasImages;
+    hasField = true;
+  }
+  if (typeof raw.title === 'boolean') {
+    launch.title = raw.title;
+    hasField = true;
+  }
+  if (typeof raw.departmentId === 'number') {
+    launch.departmentId = raw.departmentId;
+    hasField = true;
+  }
+
+  if (!hasField) {
+    return;
+  }
+
   const normalizedLaunch: LaunchParams = {
     hasImages: launch.hasImages ?? true,
     title: launch.title ?? false,

@@ -1,10 +1,13 @@
-import type z from 'zod';
+/**
+ * Browser-side parsers for MCP tool results.
+ *
+ * These parsers intentionally avoid importing the Zod schemas defined in
+ * types/types.ts (e.g. DepartmentsSchema, SearchMuseumObjectsStructuredContentSchema).
+ * Importing those schemas would pull the entire Zod library (~110 kb) into the
+ * browser bundle. The server already validates structuredContent with Zod before
+ * it reaches the UI, so lightweight runtime shape-checks are sufficient here.
+ */
 import type { ToolResult } from '../shared/types.js';
-import {
-  DepartmentsSchema,
-  OpenMetExplorerStructuredContentSchema,
-  SearchMuseumObjectsStructuredContentSchema,
-} from '../../types/types.js';
 import { extractText } from '../shared/utils.js';
 
 export interface Department {
@@ -20,9 +23,18 @@ export interface ParsedSearchResult {
   objectIDs: number[];
 }
 
-export type ExplorerLaunchState = z.infer<typeof OpenMetExplorerStructuredContentSchema>['initialState'];
+export interface ExplorerLaunchState {
+  q?: string;
+  hasImages?: boolean;
+  title?: boolean;
+  departmentId?: number;
+}
 
-export function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
   const value = result?.structuredContent;
   if (value && typeof value === 'object') {
     return value;
@@ -32,10 +44,22 @@ export function getStructuredValue(result: ToolResult): Record<string, unknown> 
 
 export function parseDepartments(result: ToolResult): Department[] {
   const structured = getStructuredValue(result);
-  if (structured) {
-    const parsed = DepartmentsSchema.safeParse(structured);
-    if (parsed.success) {
-      return parsed.data.departments;
+  if (structured && Array.isArray(structured.departments)) {
+    const departments: Department[] = [];
+    for (const dept of structured.departments) {
+      if (
+        isNonNullObject(dept)
+        && typeof dept.departmentId === 'number'
+        && typeof dept.displayName === 'string'
+      ) {
+        departments.push({
+          departmentId: dept.departmentId,
+          displayName: dept.displayName,
+        });
+      }
+    }
+    if (departments.length > 0) {
+      return departments;
     }
   }
 
@@ -62,9 +86,16 @@ export function parseSearchResult(
 ): ParsedSearchResult {
   const structured = getStructuredValue(result);
   if (structured) {
-    const parsed = SearchMuseumObjectsStructuredContentSchema.safeParse(structured);
-    if (parsed.success) {
-      return parsed.data;
+    const { total, page, pageSize, totalPages, objectIDs } = structured;
+    if (
+      typeof total === 'number'
+      && typeof page === 'number'
+      && typeof pageSize === 'number'
+      && typeof totalPages === 'number'
+      && Array.isArray(objectIDs)
+      && objectIDs.every(id => typeof id === 'number')
+    ) {
+      return { total, page, pageSize, totalPages, objectIDs };
     }
   }
 
@@ -105,14 +136,25 @@ export function parseSearchResult(
 
 export function parseExplorerLaunchState(result: ToolResult): ExplorerLaunchState | undefined {
   const structured = getStructuredValue(result);
-  if (!structured) {
+  if (!structured || !isNonNullObject(structured.initialState)) {
     return undefined;
   }
 
-  const parsed = OpenMetExplorerStructuredContentSchema.safeParse(structured);
-  if (!parsed.success) {
-    return undefined;
+  const state = structured.initialState;
+  const launch: ExplorerLaunchState = {};
+
+  if (typeof state.q === 'string') {
+    launch.q = state.q;
+  }
+  if (typeof state.hasImages === 'boolean') {
+    launch.hasImages = state.hasImages;
+  }
+  if (typeof state.title === 'boolean') {
+    launch.title = state.title;
+  }
+  if (typeof state.departmentId === 'number') {
+    launch.departmentId = state.departmentId;
   }
 
-  return parsed.data.initialState;
+  return launch;
 }
