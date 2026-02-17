@@ -7,6 +7,23 @@ interface StatusCallback {
   setStatus: (message: string, isError: boolean) => void;
 }
 
+type ContextContentBlock
+  = { type: 'text'; text: string }
+    | { type: 'image'; data: string; mimeType: string };
+
+interface ContextUpdatePayload {
+  objectDetailsText: string;
+  content: ContextContentBlock[];
+  hasImagePayload: boolean;
+  canSendImagePayload: boolean;
+  canSendStructuredContent: boolean;
+}
+
+interface MessageFallbackOutcome {
+  handled: boolean;
+  error?: unknown;
+}
+
 type AddContextButtonState = Pick<
   AppState,
   'selectedObject' | 'addedContextObjectIds' | 'isAddingToContext'
@@ -154,6 +171,163 @@ async function sendToolCallMessageForImageContext(
   return true;
 }
 
+function buildContextUpdatePayload(
+  state: AddSelectedObjectToContextState,
+  objectData: ObjectData,
+  capabilities: ReturnType<App['getHostCapabilities']>['updateModelContext'] | undefined,
+): ContextUpdatePayload {
+  const objectDetailsText = buildObjectContextText(objectData);
+  const imageData = state.selectedImageData;
+  const imageMimeType = state.selectedImageMimeType;
+  const hasImagePayload = Boolean(imageData && imageMimeType);
+  const canSendImagePayload = hasImagePayload
+    && (capabilities ? Boolean(capabilities.image) : true);
+  const canSendStructuredContent = Boolean(capabilities?.structuredContent);
+  const content: ContextContentBlock[] = [{ type: 'text', text: objectDetailsText }];
+
+  if (imageData && imageMimeType && canSendImagePayload) {
+    content.push({
+      type: 'image',
+      data: imageData,
+      mimeType: imageMimeType,
+    });
+  }
+
+  return {
+    objectDetailsText,
+    content,
+    hasImagePayload,
+    canSendImagePayload,
+    canSendStructuredContent,
+  };
+}
+
+async function updateContextFromPayload(
+  app: App,
+  objectData: ObjectData,
+  payload: ContextUpdatePayload,
+): Promise<void> {
+  await app.updateModelContext({
+    content: payload.content,
+    structuredContent: payload.canSendStructuredContent
+      ? {
+          source: 'met-explorer-app',
+          object: objectData,
+          hasEmbeddedImage: payload.canSendImagePayload,
+        }
+      : undefined,
+  });
+}
+
+async function tryMessageFallback(
+  app: App,
+  state: AddSelectedObjectToContextState,
+  objectData: ObjectData,
+  objectDetailsText: string,
+): Promise<MessageFallbackOutcome> {
+  try {
+    const handled = await sendToolCallMessageForImageContext(app, state, objectData, objectDetailsText);
+    return { handled };
+  }
+  catch (error) {
+    return { handled: true, error };
+  }
+}
+
+async function handleMessageFallbackAfterContextAdd(
+  app: App,
+  state: AddSelectedObjectToContextState,
+  callbacks: StatusCallback,
+  objectData: ObjectData,
+  objectDetailsText: string,
+): Promise<void> {
+  const outcome = await tryMessageFallback(app, state, objectData, objectDetailsText);
+  if (outcome.error) {
+    callbacks.setStatus(errorToMessage(outcome.error), true);
+    return;
+  }
+
+  if (outcome.handled) {
+    callbacks.setStatus('Object details were added. Sent a follow-up chat message so the model can fetch image context via tool call.', false);
+    return;
+  }
+
+  callbacks.setStatus('Object details were added, but this host does not accept image context blocks.', false);
+}
+
+async function tryUpdateTextOnly(
+  app: App,
+  objectDetailsText: string,
+): Promise<{ success: true } | { success: false; error: unknown }> {
+  try {
+    await app.updateModelContext({
+      content: [{ type: 'text', text: objectDetailsText }],
+    });
+    return { success: true };
+  }
+  catch (error) {
+    return { success: false, error };
+  }
+}
+
+async function tryMessageFallbackAfterFailure(
+  app: App,
+  state: AddSelectedObjectToContextState,
+  callbacks: StatusCallback,
+  objectData: ObjectData,
+  objectDetailsText: string,
+): Promise<boolean> {
+  const outcome = await tryMessageFallback(app, state, objectData, objectDetailsText);
+  if (!outcome.handled) {
+    return false;
+  }
+
+  if (outcome.error) {
+    callbacks.setStatus(errorToMessage(outcome.error), true);
+    return true;
+  }
+
+  callbacks.setStatus('Sent a follow-up chat message so the model can fetch image context via tool call.', false);
+  return true;
+}
+
+async function handleContextUpdateFailure(
+  app: App,
+  state: AddSelectedObjectToContextState,
+  callbacks: StatusCallback,
+  objectData: ObjectData,
+  initialError: unknown,
+): Promise<void> {
+  const objectDetailsText = buildObjectContextText(objectData);
+  const canRetryTextOnly = Boolean(state.selectedImageData && state.selectedImageMimeType);
+
+  if (!canRetryTextOnly) {
+    if (await tryMessageFallbackAfterFailure(app, state, callbacks, objectData, objectDetailsText)) {
+      return;
+    }
+
+    callbacks.setStatus(errorToMessage(initialError), true);
+    return;
+  }
+
+  const retryResult = await tryUpdateTextOnly(app, objectDetailsText);
+  if (!retryResult.success) {
+    if (await tryMessageFallbackAfterFailure(app, state, callbacks, objectData, objectDetailsText)) {
+      return;
+    }
+
+    callbacks.setStatus(errorToMessage(retryResult.error), true);
+    return;
+  }
+
+  markObjectAsAdded(state, objectData);
+  if (await tryMessageFallbackAfterFailure(app, state, callbacks, objectData, objectDetailsText)) {
+    return;
+  }
+
+  callbacks.setStatus('Object details were added, but image context was rejected by this host.', false);
+}
+
 export async function addSelectedObjectToContext(
   app: App,
   state: AddSelectedObjectToContextState,
@@ -171,110 +345,31 @@ export async function addSelectedObjectToContext(
   updateAddContextButton(state, addContextBtn);
 
   try {
-    const objectDetailsText = buildObjectContextText(objectData);
-    const imageData = state.selectedImageData;
-    const imageMimeType = state.selectedImageMimeType;
-    const hasImagePayload = Boolean(imageData && imageMimeType);
-    const canSendImagePayload = hasImagePayload
-      && (capabilities ? Boolean(capabilities.image) : true);
-    const canSendStructuredContent = Boolean(capabilities?.structuredContent);
-    const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
-      { type: 'text', text: objectDetailsText },
-    ];
-
-    if (imageData && imageMimeType && canSendImagePayload) {
-      content.push({
-        type: 'image',
-        data: imageData,
-        mimeType: imageMimeType,
-      });
-    }
-
-    await app.updateModelContext({
-      content,
-      structuredContent: canSendStructuredContent
-        ? {
-            source: 'met-explorer-app',
-            object: objectData,
-            hasEmbeddedImage: canSendImagePayload,
-          }
-        : undefined,
-    });
+    const payload = buildContextUpdatePayload(state, objectData, capabilities);
+    await updateContextFromPayload(app, objectData, payload);
 
     markObjectAsAdded(state, objectData);
 
-    if (canSendImagePayload) {
+    if (payload.canSendImagePayload) {
       callbacks.setStatus('Object details and image were added to model context.', false);
       return;
     }
 
-    if (hasImagePayload && !canSendImagePayload) {
-      try {
-        const sentMessage = await sendToolCallMessageForImageContext(app, state, objectData, objectDetailsText);
-        if (sentMessage) {
-          callbacks.setStatus('Object details were added. Sent a follow-up chat message so the model can fetch image context via tool call.', false);
-          return;
-        }
-      }
-      catch (messageError) {
-        callbacks.setStatus(errorToMessage(messageError), true);
-        return;
-      }
-
-      callbacks.setStatus('Object details were added, but this host does not accept image context blocks.', false);
+    if (payload.hasImagePayload && !payload.canSendImagePayload) {
+      await handleMessageFallbackAfterContextAdd(
+        app,
+        state,
+        callbacks,
+        objectData,
+        payload.objectDetailsText,
+      );
       return;
     }
 
     callbacks.setStatus('Object details were added to model context.', false);
   }
   catch (error) {
-    const objectDetailsText = buildObjectContextText(objectData);
-    const canRetryTextOnly = Boolean(state.selectedImageData && state.selectedImageMimeType);
-
-    const tryToolCallMessageFallback = async (): Promise<boolean> => {
-      try {
-        const sentMessage = await sendToolCallMessageForImageContext(app, state, objectData, objectDetailsText);
-        if (!sentMessage) {
-          return false;
-        }
-
-        callbacks.setStatus('Sent a follow-up chat message so the model can fetch image context via tool call.', false);
-        return true;
-      }
-      catch (messageError) {
-        callbacks.setStatus(errorToMessage(messageError), true);
-        return true;
-      }
-    };
-
-    if (!canRetryTextOnly) {
-      if (await tryToolCallMessageFallback()) {
-        return;
-      }
-
-      callbacks.setStatus(errorToMessage(error), true);
-      return;
-    }
-
-    try {
-      await app.updateModelContext({
-        content: [{ type: 'text', text: objectDetailsText }],
-      });
-      markObjectAsAdded(state, objectData);
-
-      if (await tryToolCallMessageFallback()) {
-        return;
-      }
-
-      callbacks.setStatus('Object details were added, but image context was rejected by this host.', false);
-    }
-    catch (retryError) {
-      if (await tryToolCallMessageFallback()) {
-        return;
-      }
-
-      callbacks.setStatus(errorToMessage(retryError), true);
-    }
+    await handleContextUpdateFailure(app, state, callbacks, objectData, error);
   }
   finally {
     state.isAddingToContext = false;
