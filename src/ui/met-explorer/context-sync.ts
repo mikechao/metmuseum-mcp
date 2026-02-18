@@ -1,5 +1,6 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
 import type { AppState } from './state.js';
+import { isNonNullObject } from '../shared/utils.js';
 
 interface SearchResultsContextPayload {
   source: 'met-explorer-app';
@@ -97,11 +98,11 @@ function getSearchResultsContextSignature(
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isNonNullObject(value) || Array.isArray(value)) {
     return {};
   }
 
-  return value as Record<string, unknown>;
+  return value;
 }
 
 function getOpenAIWidgetApi(): OpenAIWidgetApi | null {

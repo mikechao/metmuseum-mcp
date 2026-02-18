@@ -10,6 +10,7 @@ import {
   extractText,
   getElementById,
   getImageContent,
+  isNonNullObject,
   parseObjectResult,
   startHeightSync,
   stringOrFallback,
@@ -194,11 +195,11 @@ function setViewMode(mode: 'results' | 'detail'): void {
 // Manual type checks instead of OpenMetExplorerLaunchStateSchema.safeParse()
 // to avoid pulling Zod (~110 kb) into the browser bundle.
 function applyLaunchState(rawState: unknown): void {
-  if (typeof rawState !== 'object' || rawState === null) {
+  if (!isNonNullObject(rawState)) {
     return;
   }
 
-  const raw = rawState as Record<string, unknown>;
+  const raw = rawState;
   const launch: ExplorerLaunchState = {};
   let hasField = false;
 

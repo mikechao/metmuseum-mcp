@@ -32,7 +32,7 @@ export interface ExplorerLaunchState {
 
 function getStructuredValue(result: ToolResult): Record<string, unknown> | null {
   const value = result?.structuredContent;
-  if (value && typeof value === 'object') {
+  if (isNonNullObject(value)) {
     return value;
   }
   return null;

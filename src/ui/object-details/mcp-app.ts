@@ -6,6 +6,7 @@ import {
   extractText,
   getElementById,
   getImageContent,
+  isNonNullObject,
   parseObjectResult,
   startHeightSync,
   stringOrFallback,
@@ -85,12 +86,11 @@ async function init(): Promise<void> {
 }
 
 function applyInputState(rawInput: unknown): void {
-  if (!rawInput || typeof rawInput !== 'object') {
+  if (!isNonNullObject(rawInput)) {
     return;
   }
 
-  const input = rawInput as Record<string, unknown>;
-  const objectId = input.objectId;
+  const objectId = rawInput.objectId;
   if (typeof objectId === 'number' && Number.isFinite(objectId)) {
     setStatus(`Loading object ${objectId}...`, false);
     titleEl.textContent = 'Loading object details...';
