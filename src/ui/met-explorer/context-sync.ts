@@ -118,6 +118,15 @@ function getOpenAIWidgetApi(): OpenAIWidgetApi | null {
   return api as OpenAIWidgetApi;
 }
 
+function debugContextSync(message: string, details?: unknown): void {
+  if (details === undefined) {
+    globalThis.console?.debug(message);
+    return;
+  }
+
+  globalThis.console?.debug(message, details);
+}
+
 function syncResultsToOpenAIWidgetState(
   openAIWidget: OpenAIWidgetApi,
   text: string,
@@ -151,14 +160,21 @@ async function trySyncSearchResultsContext(
   text: string,
   structuredContent: SearchResultsContextPayload,
 ): Promise<boolean> {
+  const failures: Array<{ attempt: string; error: unknown }> = [];
+
   try {
     await app.updateModelContext({
       content: [{ type: 'text', text }],
       structuredContent,
     });
+    debugContextSync('[met-explorer] Synced results context via updateModelContext(content + structuredContent).');
     return true;
   }
-  catch {
+  catch (error) {
+    failures.push({
+      attempt: 'content + structuredContent',
+      error,
+    });
     // Retry with plain text only for hosts that reject structured content.
   }
 
@@ -166,9 +182,14 @@ async function trySyncSearchResultsContext(
     await app.updateModelContext({
       content: [{ type: 'text', text }],
     });
+    debugContextSync('[met-explorer] Synced results context via updateModelContext(content only).');
     return true;
   }
-  catch {
+  catch (error) {
+    failures.push({
+      attempt: 'content only',
+      error,
+    });
     // Retry with structured only for hosts that reject text blocks.
   }
 
@@ -176,9 +197,15 @@ async function trySyncSearchResultsContext(
     await app.updateModelContext({
       structuredContent,
     });
+    debugContextSync('[met-explorer] Synced results context via updateModelContext(structuredContent only).');
     return true;
   }
-  catch {
+  catch (error) {
+    failures.push({
+      attempt: 'structuredContent only',
+      error,
+    });
+    debugContextSync('[met-explorer] Failed to sync results context with all updateModelContext payload shapes.', failures);
     return false;
   }
 }
