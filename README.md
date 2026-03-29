@@ -32,6 +32,10 @@ A Model Context Protocol (MCP) server that provides access to the Metropolitan M
 - [License](#license)
 - [Disclaimer](#disclaimer)
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/mikechao-metmuseum-mcp).
+
 ## Features
 
 This server provides AI models the following tools to interact with the art collection of The Met:
