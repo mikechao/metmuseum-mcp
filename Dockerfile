@@ -10,6 +10,7 @@ RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy TypeScript configuration and source code
 COPY tsconfig.json ./
+COPY eslint.config.mjs ./
 COPY src ./src
 COPY scripts ./scripts
 
